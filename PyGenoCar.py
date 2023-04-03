@@ -12,7 +12,6 @@ from boxcar.floor import Floor
 from boxcar.car import Car, create_random_car, save_car, load_car, smart_clip
 from genetic_algorithm.population import Population
 from genetic_algorithm.individual import Individual
-from genetic_algorithm.crossover import simulated_binary_crossover as SBX
 from genetic_algorithm.crossover import single_point_binary_crossover as SPBX
 from genetic_algorithm.mutation import gaussian_mutation
 from genetic_algorithm.selection import elitism_selection, roulette_wheel_selection, tournament_selection
@@ -683,7 +682,8 @@ class MainWindow(QMainWindow):
 
         # SBX
         if crossover_bucket == 0:
-            c1_chromosome, c2_chromosome = SBX(p1_chromosome, p2_chromosome, get_ga_constant('SBX_eta'))
+            # c1_chromosome, c2_chromosome = SBX(p1_chromosome, p2_chromosome, get_ga_constant('SBX_eta'))
+            c1_chromosome, c2_chromosome = SPBX(p1_chromosome, p2_chromosome)
         else:
             raise Exception('Unable to determine valid crossover based off probabilities')
 
