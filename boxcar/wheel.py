@@ -1,12 +1,15 @@
 from Box2D import *
 from settings import get_boxcar_constant
+from typing import List
+
 
 class Wheel(object):
-    def __init__(self, world: b2World, radius: float, density: float, restitution: float = 0.2):
+    def __init__(self, world: b2World, radius: float, density: float, restitution: float = 0.2, vertices: any = None):
         self.radius = radius
         self.density = density
         # self.motor_speed = motor_speed  # Used when it's connected to a chassis
         self.restitution = restitution
+        self.vertices = vertices
 
         # Create body def
         body_def = b2BodyDef()
@@ -14,6 +17,18 @@ class Wheel(object):
         body_def.position = b2Vec2(0, 1)
         self.body = world.CreateBody(body_def)
 
+        if not self.vertices:
+            fixture_def = self.circle_wheel()
+        else:
+            fixture_def = self.polygon_wheel(vertices)
+
+        # Create fixture on body
+        self.body.CreateFixture(fixture_def)
+
+        self._mass = self.body.mass
+        self._torque = 0.0
+
+    def circle_wheel(self):
         # Create fixture def + circle for wheel
         fixture_def = b2FixtureDef()
         circle = b2CircleShape()
@@ -24,11 +39,20 @@ class Wheel(object):
         fixture_def.restitution = self.restitution
         fixture_def.groupIndex = -1
 
-        # Create fixture on body
-        self.body.CreateFixture(fixture_def)
-        
-        self._mass = self.body.mass
-        self._torque = 0.0
+        return fixture_def
+
+    def polygon_wheel(self, vertices: List[b2Vec2]):
+        fixture_def = b2FixtureDef()
+        polygon = b2PolygonShape()
+        polygon.radius = 0  # self.radius  # MODIFIED added by us TODOcheck if it works
+        fixture_def.shape = polygon
+        fixture_def.density = self.density
+        fixture_def.friction = 10.0
+        fixture_def.restitution = self.restitution
+        fixture_def.groupIndex = -1
+        fixture_def.shape.vertices = vertices
+
+        return fixture_def
 
     @property
     def mass(self):
@@ -48,5 +72,5 @@ class Wheel(object):
 
 
 def clone(self) -> 'Wheel':
-    clone = Wheel(self.world, self.radius, self.density, self.restitution)
+    clone = Wheel(self.world, self.radius, self.density, self.restitution, self.vertices)
     return clone

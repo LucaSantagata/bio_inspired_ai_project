@@ -123,8 +123,10 @@ def draw_polygon(painter: QPainter, body: b2Body, poly_type: str = '', adjust_pa
 def _set_painter_solid(painter: QPainter, color: Qt.GlobalColor, with_antialiasing: bool = True):
     _set_painter(painter, color, True, with_antialiasing)
 
+
 def _set_painter_clear(painter: QPainter, color: Qt.GlobalColor, with_antialiasing: bool = True):
     _set_painter(painter, color, False, with_antialiasing)
+
 
 def _set_painter(painter: QPainter, color: Qt.GlobalColor, fill: bool, with_antialiasing: bool = True):
     painter.setPen(QPen(color, 1./scale, Qt.SolidLine))
@@ -174,6 +176,7 @@ class GameWindow(QWidget):
 
         self._camera.x -= self._camera_speed * diff_x 
         self._camera.y -= self._camera_speed * diff_y
+
     def _update(self):
         """
         Main update method used. Called once every (1/FPS) second.
@@ -186,7 +189,10 @@ class GameWindow(QWidget):
         Draws a car to the window
         """
         for wheel in car.wheels:
-            draw_circle(painter, wheel.body)
+            if wheel.vertices:
+                draw_polygon(painter, wheel.body, poly_type='chassis')
+            else:
+                draw_circle(painter, wheel.body)
 
         draw_polygon(painter, car.chassis, poly_type='chassis')
 
@@ -246,7 +252,6 @@ class MainWindow(QMainWindow):
 
         self.manual_control = False
 
-        
         self.current_generation = 0
         self.leader = None  # What car is leading
         self.num_cars_alive = get_boxcar_constant('run_at_a_time')
@@ -283,8 +288,6 @@ class MainWindow(QMainWindow):
 
         self._mutation_bins = np.cumsum([get_ga_constant('probability_gaussian'),
                                          get_ga_constant('probability_random_uniform')])
-
-
 
         self.init_window()
         self.stats_window.pop_size.setText(str(get_ga_constant('num_parents')))
@@ -371,14 +374,10 @@ class MainWindow(QMainWindow):
             self.state = States.NEXT_GEN_CREATE_OFFSPRING
         elif get_ga_constant('selection_type').lower() == 'plus' and self._offset_into_population >= len(self.population.individuals):
             self.state = States.NEXT_GEN_CREATE_OFFSPRING
-        
 
         # Set the next pop
         # random.shuffle(next_pop)
         # self.population.individuals = next_pop
-
-
-
 
     def init_window(self):
         self.centralWidget = QWidget(self)
@@ -456,6 +455,7 @@ class MainWindow(QMainWindow):
                     world = self.world
                     wheel_radii = individual.wheel_radii
                     wheel_densities = individual.wheel_densities
+                    wheels_vertices_pol = individual.wheels_vertices_pol
                     #wheel_motor_speeds = individual.wheel_motor_speeds
                     chassis_vertices = individual.chassis_vertices
                     chassis_densities = individual.chassis_densities
@@ -466,7 +466,7 @@ class MainWindow(QMainWindow):
                     # If the individual is still alive, they survive
                     if lifespan > 0:
                         car = Car(world, 
-                                wheel_radii, wheel_densities,# wheel_motor_speeds,       # Wheel
+                                wheel_radii, wheel_densities, wheels_vertices_pol,  # wheel_motor_speeds,       # Wheel #TODO add vertices
                                 chassis_vertices, chassis_densities,                    # Chassis
                                 winning_tile, lowest_y_pos,
                                 lifespan)
@@ -579,7 +579,6 @@ class MainWindow(QMainWindow):
         Sets the max fitness label
         """
         self.stats_window.best_fitness.setText(str(int(self.max_fitness)))
-
 
     def _update(self) -> None:
         """
@@ -758,6 +757,7 @@ def save_population(population_folder: str, population: Population, settings: Di
         name = 'car_{}'.format(i)
         print('saving {} to {}'.format(name, population_folder))
         save_car(population_folder, name, car, settings)
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='PyGenoCar V1.0')
