@@ -19,12 +19,13 @@ def rotate_floor_tile(coords: List[b2Vec2], center: b2Vec2, angle: float) -> Lis
 
     return new_coords
 
-def create_floor_tile(world: b2World, position: b2Vec2, angle: float) -> b2Body:
+# MN FIXME do we want to make normal floor for the start and finish line?
+def create_normal_floor_tile(world: b2World, position: b2Vec2, angle: float) -> b2Body:
     """
     Create a floor tile at some angle
     """
     width = get_boxcar_constant('floor_tile_width')
-    height = get_boxcar_constant('floor_tile_height')
+    height = get_boxcar_constant('floor_tile_height')    
 
     body_def = b2BodyDef()
     body_def.position = position
@@ -36,11 +37,65 @@ def create_floor_tile(world: b2World, position: b2Vec2, angle: float) -> b2Body:
     fixture_def.friction = 0.5
 
     # Coordinates of tile
-    # p3---------p2
+    # p1---------p0
     # |          |
-    # p0---------p1
+    # p2---------p3
+
     coords: List[b2Vec2] = []
     coords.append(b2Vec2(0, 0))            # p0
+    coords.append(b2Vec2(width, 0))        # p1
+    coords.append(b2Vec2(width, -height))  # p2
+    coords.append(b2Vec2(0, -height))      # p3
+    # Rotate @NOTE: This rotates in reference to p0
+    coords = rotate_floor_tile(coords, b2Vec2(0, 0), angle)
+
+    # Set vertices of fixture
+    fixture_def.shape.vertices = coords
+
+    body.CreateFixture(fixture_def)
+    return body
+
+def create_floor_tile(world: b2World, position: b2Vec2, angle: float) -> b2Body:
+    """
+    Create a floor tile at some angle
+    """
+    width = get_boxcar_constant('floor_tile_width')
+    height = get_boxcar_constant('floor_tile_height')
+
+    # MN MODIFIED for creating strange tiles
+    min_section_tile = get_boxcar_constant('min_num_section_per_tile')
+    max_section_tile = get_boxcar_constant('max_num_section_per_tile')
+    num_section_tile = np.random.randint(min_section_tile, max_section_tile+1)
+    
+    body_def = b2BodyDef()
+    body_def.position = position
+    body = world.CreateBody(body_def)
+
+    # Create Fixture
+    fixture_def = b2FixtureDef()
+    fixture_def.shape = b2PolygonShape()
+    fixture_def.friction = 0.5
+
+    # Coordinates of tile
+    # p1---------p0
+    # |          |
+    # p2---------p3
+
+    coords: List[b2Vec2] = []
+    coords.append(b2Vec2(0, 0))            # p0
+
+    if (num_section_tile >= 2):
+        angle_in_rad = (math.pi/num_section_tile) # calculate the angle of each section in radians
+        angle_section = angle_in_rad
+        radius = width/2
+    
+        for i in range(num_section_tile-1):
+            if angle_in_rad > (math.pi/2):
+                coords.append(b2Vec2(abs(radius+abs(radius * (math.cos(angle_in_rad)))), abs(radius*math.sin(angle_in_rad))))
+            else:
+                coords.append(b2Vec2(abs(radius-abs(radius * (math.cos(angle_in_rad)))), abs(radius*math.sin(angle_in_rad))))
+            angle_in_rad += angle_section
+    
     coords.append(b2Vec2(width, 0))        # p1
     coords.append(b2Vec2(width, -height))  # p2
     coords.append(b2Vec2(0, -height))      # p3
@@ -69,6 +124,8 @@ class Floor(object):
             self._generate_ramp()
         elif self.floor_creation_type == 'jagged':
             self._create_jagged_floor()
+        elif self.floor_creation_type == 'holes':
+            self._create_holes_floor()
 
         self.lowest_y = 10
         for floor_tile in self.floor_tiles:
@@ -204,6 +261,32 @@ class Floor(object):
             
             world_coord = floor_tile.GetWorldPoint(floor_tile.fixtures[0].shape.vertices[t])
             tile_position = world_coord
+
+        self._create_stopping_zone(tile_position)
+
+    # MN MODIFIED generate holes floors
+    def _create_holes_floor(self):
+        
+        tile_position = b2Vec2(-5, 0)
+        # create first tiles 
+        for i in range(10):
+            floor_tile = create_floor_tile(self.world, tile_position, 0)
+            self.floor_tiles.append(floor_tile)
+            world_coord = floor_tile.GetWorldPoint(floor_tile.fixtures[0].shape.vertices[1])
+            tile_position = world_coord
+
+        last_approach_tile = tile_position
+
+        num_holes = get_boxcar_constant('number_of_holes')
+        distance_to_fly = get_boxcar_constant('hole_distance_needed_to_jump')
+        for i in range(num_holes):
+            tile_position = b2Vec2(tile_position.x + distance_to_fly, last_approach_tile.y)
+            for i in range(10):
+                floor_tile = create_floor_tile(self.world, tile_position, 0)
+                self.floor_tiles.append(floor_tile)
+                world_coord = floor_tile.GetWorldPoint(floor_tile.fixtures[0].shape.vertices[1])
+                tile_position = world_coord
+            distance_to_fly = distance_to_fly + 1
 
         self._create_stopping_zone(tile_position)
 

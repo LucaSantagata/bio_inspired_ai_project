@@ -167,6 +167,10 @@ class DensityWindow(QWidget):
             self._add_bc_row_entry('tile_angle_std', 'Tile Andle (std):', font_bold, normal_font)
             self._add_bc_row_entry('tile_gaussian_denominator', 'Angle Normalizer:', font_bold, normal_font)
             self._add_bc_row_entry('tile_gaussian_threshold', 'Max Numerator:', font_bold, normal_font)
+        # MN MODIFIED holes specific stuff
+        elif get_boxcar_constant('floor_creation_type') == 'holes':
+            self._add_bc_row_entry('number_of_holes', 'Number of holes:', font_bold, normal_font)
+            self._add_bc_row_entry('hole_distance_needed_to_jump', 'First jump distance:', font_bold, normal_font)
         # Jagged specific stuff
         elif get_boxcar_constant('floor_creation_type') == 'jagged':
             angle_range = '-{:.2f}, {:.2f}'.format(
