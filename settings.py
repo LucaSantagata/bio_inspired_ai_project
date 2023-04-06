@@ -13,6 +13,11 @@ settings['boxcar'] = {
     'floor_tile_width': (1.5, float),  # 1.5
     'max_floor_tiles': (200, int),
     'gaussian_floor_seed': (0, int),
+
+    # MN MODIFIED if the tiles are strange or not
+    'min_num_section_per_tile': (10, int), # MN MODIFIED min number of sections per tile
+    'max_num_section_per_tile': (10, int), # MN MODIFIED max number of sections per tile
+    
     'floor_creation_type': ('gaussian', str),
     ### Floor - Gaussian random. Used when 'floor_creation_type' == 'gaussian' ###
     # Only needed if using gaussian random floor creation
@@ -35,6 +40,10 @@ settings['boxcar'] = {
 
     'ramp_approach_distance': (10, float),
     'ramp_distance_needed_to_jump': (10, float),
+
+    ### Floor - holes. 
+    'number_of_holes': (5, int), # MN MODIFIED number of holes
+    'hole_distance_needed_to_jump': (1, float), # MN MODIFIED the first jump distance
 
     ### Jagged - ramp. Used when 'floor_creation_type' == 'jagged' ###
     # Only needed if using jaged floor creation
