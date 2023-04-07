@@ -23,6 +23,7 @@ import sys
 import time
 import numpy as np
 import math
+from datetime import datetime
 
 
 ## Constants ##
@@ -231,6 +232,8 @@ class GameWindow(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self, world, replay=False):
         super().__init__()
+        self.file_name = (datetime.now()).strftime("%Y%m%d_%H%M") + ".csv"
+
         self.world = world
         self.title = 'Genetic Algorithm - Cars'
         self.top = 150
@@ -320,11 +323,11 @@ class MainWindow(QMainWindow):
 
             # Should we save the pop
             if args.save_pop:
-                path = os.path.join(args.save_pop, 'pop_gen{}'.format(self.current_generation))
-                if os.path.exists(path):
-                    raise Exception('{} already exists. This would overwrite everything, choose a different folder or delete it and try again'.format(path))
-                os.makedirs(path)
-                save_population(path, self.population, settings.settings)
+                path = args.save_pop
+                if not os.path.exists(path):
+                    # raise Exception('{} already exists. This would overwrite everything, choose a different folder or delete it and try again'.format(path))
+                    os.makedirs(path)
+                save_population(path, self.file_name, self.population, settings.settings, self.current_generation)
             # Save best? 
             if args.save_best:
                 save_car(args.save_best, 'car_{}'.format(self.current_generation), self.population.fittest_individual, settings.settings)
@@ -332,7 +335,6 @@ class MainWindow(QMainWindow):
             self._set_previous_gen_avg_fitness()
             self._set_previous_gen_num_winners()
             self._increment_generation()
-
 
             # Grab the best individual and compare to best fitness
             best_ind = self.population.fittest_individual
@@ -787,7 +789,7 @@ class MainWindow(QMainWindow):
             save_population(args.save_pop_on_close, self.population, settings.settings)
 
 
-def save_population(population_folder: str, population: Population, settings: Dict[str, Any]) -> None:
+def save_population(population_folder: str, file_name: str, population: Population, settings: Dict[str, Any], current_generation: int) -> None:
     """
     Saves all cars in the population
     """
@@ -796,10 +798,15 @@ def save_population(population_folder: str, population: Population, settings: Di
     # self.population.individuals is the ENTIRE population of chromosomes.
     # This will not save anything the first generation since those are just random cars and nothing has
     # been added to the population yet.
+
+    if file_name not in os.listdir(population_folder):
+        with open(os.path.join(population_folder, file_name), "w") as population_file:
+            population_file.write(get_boxcar_constant("population_headers"))
+
     for i, car in enumerate(population.individuals):
-        name = 'car_{}'.format(i)
-        print('saving {} to {}'.format(name, population_folder))
-        save_car(population_folder, name, car, settings)
+        car_name = f'car_gen{current_generation}_id{i}'
+        print('saving {} to {}'.format(car_name, population_folder))
+        save_car(population_folder, file_name, car_name, car, settings, current_generation)
 
 
 def parse_args():

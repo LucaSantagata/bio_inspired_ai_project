@@ -26,17 +26,6 @@ genes = {
 }
 
 
-def calc_polygon_radius_center(vertices: List[b2Vec2]):
-    center = sum(vertices, b2Vec2(0, 0)) / len(vertices)
-
-    radiuses = []
-    for vertex in vertices:
-        radiuses.append((vertex - center).length)
-
-    radius = max(radiuses)
-    return radius, center
-
-
 class Car(Individual):
     def __init__(self, world: b2World, 
                  wheel_radii: List[float], wheel_densities: List[float], wheels_vertices_pol: List[tuple],  # wheel_motor_speeds: List[float],
@@ -111,13 +100,12 @@ class Car(Individual):
 
         # Calculate torque of wheel
         for wheel in self.wheels:
-
             if wheel.radius > 0.0 and wheel.density > 0.0:  # calc torque if b2CircleShape
                 torque = self.mass * abs(self.world.gravity.y) * wheel.radius
-            else:  # calc torque if b2PolygonShape
-                radius = calc_polygon_radius_center(wheel.vertices)[0]
-                torque = self.mass * abs(self.world.gravity.y) * radius
-            wheel.torque = torque
+            # else:  # calc torque if b2PolygonShape
+            #     wheel.radius = calc_polygon_radius_center(wheel.vertices)[0]
+            #     torque = self.mass * abs(self.world.gravity.y) * wheel.radius
+                wheel.torque = torque
 
         joint_def = b2RevoluteJointDef()
         for i in range(len(self.wheels)):
@@ -126,7 +114,8 @@ class Car(Individual):
             joint_def.localAnchorA = chassis_vertex
 
             if self.wheels[i].vertices:  # b2PolygonShape # TODO check if density works
-                joint_def.localAnchorB = calc_polygon_radius_center(self.wheels[i].vertices)[1]
+                # joint_def.localAnchorB = calc_polygon_radius_center(self.wheels[i].vertices)[1]
+                joint_def.localAnchorB = self.wheels[i].center
             else:  # b2CircleShape
                 joint_def.localAnchorB = self.wheels[i].body.fixtures[0].shape.pos
       
@@ -327,7 +316,6 @@ class Car(Individual):
             self.world.DestroyBody(wheel.body)
         self._destroyed = True
 
-
     @property
     def linear_velocity(self) -> b2Vec2:
         return self.chassis.linearVelocity
@@ -352,7 +340,7 @@ def create_random_car(world: b2World, winning_tile: b2Vec2, lowest_y_pos: float)
     """
     # Create a number of random wheels.
     # Each wheel will have a random radius and density
-    num_wheels = random.randint(get_boxcar_constant('min_num_wheels'), get_boxcar_constant('max_num_wheels') + 1)
+    num_wheels = random.randint(low=get_boxcar_constant('min_num_wheels'), high=get_boxcar_constant('max_num_wheels') + 1)
     wheels_attachment_vertices = list(range(num_wheels))  # What vertices should we attach to?
     rand.shuffle(wheels_attachment_vertices)
     wheels_attachment_vertices = wheels_attachment_vertices[:num_wheels]
@@ -507,15 +495,15 @@ def smart_clip(chromosome: np.ndarray) -> None:
             out=chromosome[genes['chassis_densities'], :])
 
 
-def save_car(population_folder: str, individual_name: str, car: Car, settings: Dict[str, Any]) -> None:
+def save_car(population_folder: str, file_name: str, individual_name: str, car: Car, settings: Dict[str, Any], current_generation: int) -> None:
     """
     Save a car. This saves one and sometimes two things:
     1. Saves the chromosome representation of the individual
     2. Saves the settings. This is only done once.
     """
     # Make the population folder if it doesn't exist
-    if not os.path.exists(population_folder):
-        os.makedirs(population_folder)
+    # if not os.path.exists(population_folder):
+    #     os.makedirs(population_folder)
     
     # Save settings
     if 'settings.pkl' not in os.listdir(population_folder):
@@ -523,8 +511,18 @@ def save_car(population_folder: str, individual_name: str, car: Car, settings: D
         with open(f, 'wb') as out:
             pickle.dump(settings, out)
 
-    fname = os.path.join(population_folder, individual_name)
-    np.save(fname, car.chromosome)
+    fname = os.path.join(population_folder, file_name)
+    with open(fname, "a") as file:
+        file.write(
+            str(current_generation) + ", " +
+            str(car.fitness) + ", " +
+            str(car.max_position) + ", " +
+            str(car.mass) + ", " +
+            str(car.frames) + ", " +
+            str(car.is_winner) + ", "
+        )
+        np.savetxt(file, np.reshape(car.chromosome, (1, 8*7)), delimiter=',', fmt="%s")
+    # np.save(fname, car.chromosome)
 
 
 def load_car(world: b2World, 

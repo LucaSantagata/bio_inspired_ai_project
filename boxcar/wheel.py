@@ -3,6 +3,17 @@ from settings import get_boxcar_constant
 from typing import List
 
 
+def calc_polygon_radius_center(vertices: List[b2Vec2]):
+    center = sum(vertices, b2Vec2(0, 0)) / len(vertices)
+
+    radiuses = []
+    for vertex in vertices:
+        radiuses.append((vertex - center).length)
+
+    radius = max(radiuses)
+    return radius, center
+
+
 class Wheel(object):
     def __init__(self, world: b2World, radius: float, density: float, restitution: float = 0.2, vertices: any = None):
         self.radius = radius
@@ -20,7 +31,8 @@ class Wheel(object):
         if not self.vertices:
             fixture_def = self.circle_wheel()
         else:
-            fixture_def = self.polygon_wheel(vertices)
+            self.radius, self.center = calc_polygon_radius_center(self.vertices)
+            fixture_def = self.polygon_wheel(self.vertices)
 
         # Create fixture on body
         self.body.CreateFixture(fixture_def)
@@ -44,7 +56,7 @@ class Wheel(object):
     def polygon_wheel(self, vertices: List[b2Vec2]):
         fixture_def = b2FixtureDef()
         polygon = b2PolygonShape()
-        polygon.radius = 0  # self.radius  # MODIFIED added by us TODOcheck if it works
+        polygon.radius = 0  #self.radius  # MODIFIED added by us TODO check if it works
         fixture_def.shape = polygon
         fixture_def.density = self.density
         fixture_def.friction = 10.0

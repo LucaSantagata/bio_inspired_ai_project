@@ -1,4 +1,5 @@
 *.DS_Store
+savepop/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
