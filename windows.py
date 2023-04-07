@@ -9,16 +9,20 @@ import sys
 import time
 from typing import Tuple
 
-normal_font = QtGui.QFont('Times', 11, QtGui.QFont.Normal)
-font_bold = QtGui.QFont('Times', 11, QtGui.QFont.Bold)
+normal_font = QtGui.QFont('Times', 13, QtGui.QFont.Normal)
+font_bold = QtGui.QFont('Times', 13, QtGui.QFont.Bold)
+
+# normal_font = QtGui.QFont('Times', 11, QtGui.QFont.Normal)
+# font_bold = QtGui.QFont('Times', 11, QtGui.QFont.Bold)
+
 
 class DensityWindow(QWidget):
     def __init__(self, parent, size):
         super().__init__(parent)
-        self.size = size
-        self.resize(size[0], size[1])
+        self.size = (size[0], size[1])
+        # self.resize(size[0], size[1])
         self._gradient_widget = QWidget()
-        self._gradient_widget.resize(size[0]/2, size[1])
+        # self._gradient_widget.resize(size[0]/2, size[1])
         self._create_linear_gradient()
 
         self.boxcar_form = QFormLayout()
@@ -29,7 +33,7 @@ class DensityWindow(QWidget):
 
         # Add the headers for the two columns we will have
         headers = QHBoxLayout()
-        headers.setContentsMargins(0,0,0,0)
+        headers.setContentsMargins(0, 0, 0, 0)
         # Add header for chassis density
         label_chassis_densities = QLabel()
         label_chassis_densities.setText('Chassis Density')
@@ -45,8 +49,7 @@ class DensityWindow(QWidget):
 
         # Add headers
         self.layout.addLayout(headers)
-        
-        
+
         # Add Chassis Density stuff
         chassis_density_vbox = QVBoxLayout()
         chassis_density_vbox.setContentsMargins(0, 0, 0, 0)
@@ -73,7 +76,7 @@ class DensityWindow(QWidget):
 
         # Add Wheel Density stufff
         wheel_density_vbox = QVBoxLayout()
-        wheel_density_vbox.setContentsMargins(0,0,0,0)
+        wheel_density_vbox.setContentsMargins(0, 0, 0, 0)
         min_wheel_density = get_boxcar_constant('min_wheel_density')
         max_wheel_density = get_boxcar_constant('max_wheel_density')
         wheel_range = max_wheel_density - min_wheel_density
@@ -91,8 +94,8 @@ class DensityWindow(QWidget):
         column_layout.addLayout(wheel_density_vbox)
 
         # Add column_layout to the layout
-        self.layout.addLayout(column_layout, 5)
-        self.layout.addStretch(1)
+        self.layout.addLayout(column_layout, 0)
+        # self.layout.addStretch(1)
 
         # Add the boxcar settings
         self._add_boxcar_settings()
@@ -127,7 +130,6 @@ class DensityWindow(QWidget):
         palette.setBrush(self._gradient_widget.backgroundRole(), brush)
         self._gradient_widget.setPalette(palette)
 
-
     def _add_boxcar_settings(self) -> None:
         label_boxcar_settings = QLabel()
         label_boxcar_settings.setFont(font_bold)
@@ -137,7 +139,7 @@ class DensityWindow(QWidget):
 
         # Make small note
         small_note = QLabel()
-        small_note.setFont(QtGui.QFont('Times', 8, QtGui.QFont.Normal))
+        small_note.setFont(QtGui.QFont('Times', 10, QtGui.QFont.Normal))
         small_note.setText('*indicates it is part of the Genetic Algorithm')
         small_note.setAlignment(Qt.AlignHCenter | Qt.AlignVCenter)
         self.layout.addWidget(small_note)
@@ -227,18 +229,20 @@ class DensityWindow(QWidget):
         self.scroll_area.setWidget(widget)
         self.scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         self.scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.scroll_area.setMaximumHeight(250)
-        self.scroll_area.setWidgetResizable(False)
+        # self.scroll_area.setMaximumHeight(250)
+        # self.scroll_area.setWidgetResizable(False)
 
         vbox = QVBoxLayout()
-        vbox.addWidget(self.scroll_area, 0)
-        self.layout.addLayout(vbox, 0) # @TODO: Adjust this
+        vbox.addWidget(self.scroll_area, 1, alignment=(Qt.AlignHCenter))
+        self.layout.addLayout(vbox, 0)  # @TODO: Adjust this
     
     def _add_bc_row_entry(self, constant: str, label_text: str,
                        label_font, value_font,
-                       alignment: Qt.AlignmentFlag = Qt.AlignLeft | Qt.AlignVCenter,
-                       force_value = None):
+                       # alignment: Qt.AlignmentFlag = Qt.AlignLeft | Qt.AlignVCenter,
+                       alignment: Qt.AlignmentFlag = Qt.AlignHCenter | Qt.AlignVCenter,
+                       force_value=None):
         _add_row_entry(self.boxcar_form, 'boxcar', constant, label_text, label_font, value_font, alignment, force_value)
+
 
 class SettingsWindow(QWidget):
     def __init__(self, parent, size):
@@ -246,7 +250,7 @@ class SettingsWindow(QWidget):
         self.resize(size[0], size[1])
 
         top_down = QVBoxLayout()
-        self.density_window = DensityWindow(self, (size[0], int(size[1]*.8)))
+        self.density_window = DensityWindow(self, (size[0], size[1]))
         
         top_down.addWidget(self.density_window)
         self.setLayout(top_down)
@@ -264,7 +268,6 @@ class StatsWindow(QWidget):
         self._init_window()
         self.setLayout(self.grid)
 
-
     def paintEvent(self, event):
         painter = QPainter(self)
         draw_border(painter, self.size)
@@ -273,7 +276,7 @@ class StatsWindow(QWidget):
         ROW = 0
         COL = 0
         stats_vbox = QVBoxLayout()
-        stats_vbox.setContentsMargins(0,0,0,0)
+        stats_vbox.setContentsMargins(0, 0, 0, 0)
 
         # Create the current generation
         generation_label = QLabel()
@@ -447,10 +450,8 @@ class StatsWindow(QWidget):
     def _add_ga_entry(self, constant: str, label_text: str,
                       label_font, value_font,
                       alignment: Qt.AlignmentFlag = Qt.AlignLeft | Qt.AlignVCenter,
-                      force_value = None):
+                      force_value=None):
         _add_top_down_entry(self.ga_settings_window, 'ga', constant, label_text, label_font, value_font, alignment, force_value)
-
-    
 
 
 def draw_border(painter: QPainter, size: Tuple[float, float]) -> None:
@@ -462,9 +463,11 @@ def draw_border(painter: QPainter, size: Tuple[float, float]) -> None:
     polygon = QPolygonF(qpoints)
     painter.drawPolygon(polygon)
 
+
 def _add_row_entry(form: QFormLayout, controller: str, constant: str, label_text: str,
                    label_font, value_font,
-                   alignment: Qt.AlignmentFlag = Qt.AlignLeft | Qt.AlignVCenter,
+                   # alignment: Qt.AlignmentFlag = Qt.AlignLeft | Qt.AlignVCenter,
+                   alignment: Qt.AlignmentFlag = Qt.AlignHCenter | Qt.AlignVCenter,
                    force_value=None) -> None:
     # Create label
     label = QLabel()
@@ -484,8 +487,8 @@ def _add_row_entry(form: QFormLayout, controller: str, constant: str, label_text
 
     value_label.setText(str(value))
 
-
     form.addRow(label, value_label)
+
 
 def _add_top_down_entry(layout: QVBoxLayout, controller: str, constant: str, label_text: str,
                         label_font, value_font,
