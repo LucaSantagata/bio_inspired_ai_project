@@ -143,8 +143,7 @@ class GameWindow(QWidget):
         self.title = 'Test'
         self.top = 150
         self.left = 150
-        self.width = 1100
-        self.height = 700
+
         self.floor = floor
         self.leader: Car = leader  # Track the leader
         self.best_car_ever = None
@@ -181,7 +180,6 @@ class GameWindow(QWidget):
         Main update method used. Called once every (1/FPS) second.
         """
         self.update()
-
 
     def _draw_car(self, painter: QPainter, car: Car):
         """
@@ -237,8 +235,10 @@ class MainWindow(QMainWindow):
         self.title = 'Genetic Algorithm - Cars'
         self.top = 150
         self.left = 150
-        self.width = 1100
-        self.height = 700
+
+        self.width = 1920
+        self.height = 1080
+
         self.max_fitness = 0.0
         self.cars = []
         self.population = Population([])
@@ -384,25 +384,68 @@ class MainWindow(QMainWindow):
         self.setWindowTitle(self.title)
         self.setGeometry(self.top, self.left, self.width, self.height)
 
-        # Create stats_window
-        self.stats_window = StatsWindow(self.centralWidget, (800, 200))
-        self.stats_window.setGeometry(QRect(0, 500, 800, 200))
-        self.stats_window.setObjectName('stats_window')
+        self._game_window_sizes = {  # up left
+            "x": 0,
+            "y": 0,
+            "w": 1500,
+            "h": 700
+        }
+
+        self._stats_window_sizes = {  # bottom left
+            "x": 0,
+            "y": self._game_window_sizes["y"] + self._game_window_sizes["h"],
+            "w": self._game_window_sizes["w"],
+            "h": self.height - self._game_window_sizes["h"]
+        }
+
+        self._settings_window_sizes = {  # top right
+            "x": self._game_window_sizes["x"] + self._game_window_sizes["w"],
+            "y": 0,
+            "w": self.width - self._game_window_sizes["w"],
+            "h": self.height
+        }
 
         # Create game_window - where the game is played
-        self.game_window = GameWindow(self.centralWidget, (800, 500), self.world, self.floor, self.cars, self.leader)
-        self.game_window.setGeometry(QRect(0, 0, 800, 500))
-        self.game_window.setObjectName('game_window')
+        # self.game_window = GameWindow(self.centralWidget, (800, 500), self.world, self.floor, self.cars, self.leader)
+        # self.game_window.setGeometry(QRect(0, 0, 800, 500))
+        self.game_window = GameWindow(
+            self.centralWidget,
+            (self._game_window_sizes["w"], self._game_window_sizes["h"]),
+            self.world, self.floor, self.cars, self.leader
+        )
+        self.game_window.setGeometry(QRect(
+            self._game_window_sizes["x"], self._game_window_sizes["y"], self._game_window_sizes["w"], self._game_window_sizes["h"]
+        ))
+        self.game_window.setObjectName("game_window")
+
+        # Create stats_window
+        # self.stats_window = StatsWindow(self.centralWidget, (800, 200))
+        # self.stats_window.setGeometry(QRect(0, 500, 800, 200))
+        self.stats_window = StatsWindow(
+            self.centralWidget,
+            (self._stats_window_sizes["w"], self._stats_window_sizes["h"])
+        )
+        self.stats_window.setGeometry(QRect(
+            self._stats_window_sizes["x"], self._stats_window_sizes["y"], self._stats_window_sizes["w"], self._stats_window_sizes["h"]
+        ))
+        self.stats_window.setObjectName('stats_window')
 
         # Create settings_window - just a bunch of settings of the game and how they were defined, etc.
-        self.settings_window = SettingsWindow(self.centralWidget, (300, 700))
-        self.settings_window.setGeometry(QRect(800, 0, 300, 700))
+        # self.settings_window = SettingsWindow(self.centralWidget, (300, 700))
+        # self.settings_window.setGeometry(QRect(800, 0, 300, 700))
+        self.settings_window = SettingsWindow(
+            self.centralWidget,
+            (self._settings_window_sizes["x"], self._settings_window_sizes["y"])
+        )
+        self.settings_window.setGeometry(QRect(
+            self._settings_window_sizes["x"], self._settings_window_sizes["y"], self._settings_window_sizes["w"], self._settings_window_sizes["h"]
+        ))
         self.settings_window.setObjectName('settings_window')
-        
 
         # Add main window
         self.main_window = QWidget(self)
-        self.main_window.setGeometry(QRect(0, 0, 800, 500))
+        # self.main_window.setGeometry(QRect(0, 0, 800, 500))
+        self.main_window.setGeometry(QRect(0, 0, self.width, self.height))
         self.main_window.setObjectName('main_window')
 
         if get_boxcar_constant('show'):
@@ -785,8 +828,8 @@ if __name__ == "__main__":
             settings.settings = pickle.load(f)
         replay = True
 
-
     world = b2World(get_boxcar_constant('gravity'))
     App = QApplication(sys.argv)
     window = MainWindow(world, replay)
+
     sys.exit(App.exec_())
