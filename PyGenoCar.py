@@ -1,6 +1,6 @@
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QScrollArea, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QFormLayout
-from PyQt5.QtGui import QPainter, QBrush, QPen, QPolygonF, QColor
+from PyQt5.QtGui import QPainter, QBrush, QPen, QPolygonF, QColor, QPixmap, QImage
 from PyQt5.QtCore import Qt, QPointF, QTimer, QRect
 from typing import Optional, Tuple, List, Dict, Any
 import argparse
@@ -21,16 +21,17 @@ from windows import SettingsWindow, StatsWindow, draw_border
 import os
 import sys
 import time
+from datetime import datetime 
 import numpy as np
 import math
-from datetime import datetime
+import cv2
+import atexit
 
 
 ## Constants ##
 scale = 70
 default_scale = 70
 FPS = 60
-
 
 @unique
 class States(Enum):
@@ -230,7 +231,7 @@ class GameWindow(QWidget):
         #     print([self.chassis.GetWorldPoint(vert) for vert in fixture.shape.vertices])
 
 class MainWindow(QMainWindow):
-    def __init__(self, world, replay=False):
+    def __init__(self, world, path, replay=False):
         super().__init__()
         self.file_name = (datetime.now()).strftime("%Y%m%d_%H%M") + ".csv"
 
@@ -251,6 +252,7 @@ class MainWindow(QMainWindow):
         self.batch_size = get_boxcar_constant('run_at_a_time')
         self.gen_without_improvement = 0
         self.replay = replay
+        self.out = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (self.width, self.height))
 
         self.manual_control = False
 
@@ -712,6 +714,9 @@ class MainWindow(QMainWindow):
 
         self.world.ClearForces()
 
+        # Add screenshot of the image to the video
+        self.addImageToVideo()
+
         # Update windows
         self.game_window._update()
 
@@ -755,6 +760,15 @@ class MainWindow(QMainWindow):
             pass
         else:
             raise Exception('Unable to determine valid mutation based off probabilities')
+        
+    def addImageToVideo(self):
+        pixmap = QPixmap(self.width, self.height)
+        self.render(pixmap)
+        qimage = pixmap.toImage()
+        buffer = qimage.bits().asstring(qimage.width() * qimage.height() * qimage.depth() // 8)
+        qimage_array = np.frombuffer(buffer, dtype=np.uint8).reshape((qimage.height(), qimage.width(), qimage.depth() // 8))
+        mat = cv2.cvtColor(qimage_array, cv2.COLOR_BGR2RGB)
+        self.out.write(mat)
     
     def keyPressEvent(self, event):
         global scale, default_scale
@@ -788,6 +802,8 @@ class MainWindow(QMainWindow):
         if args.save_pop_on_close:
             save_population(args.save_pop_on_close, self.population, settings.settings)
 
+    def getVideo(self):
+        return self.out
 
 def save_population(population_folder: str, file_name: str, population: Population, settings: Dict[str, Any], current_generation: int) -> None:
     """
@@ -822,11 +838,16 @@ def parse_args():
     args = parser.parse_args()
     return args
 
+def release(win):
+    win.getVideo().release()
+    sys.exit()
+
 
 if __name__ == "__main__":
     global args
     args = parse_args()
     replay = False
+    
     if args.replay_from_folder:
         if 'settings.pkl' not in os.listdir(args.replay_from_folder):
             raise Exception('settings.pkl not found within {}'.format(args.replay_from_folder))
@@ -835,8 +856,13 @@ if __name__ == "__main__":
             settings.settings = pickle.load(f)
         replay = True
 
+    current_dir = os.getcwd()
+    output_file = "output_video.mp4"
+    output_path = os.path.join(current_dir, output_file)
+
     world = b2World(get_boxcar_constant('gravity'))
     App = QApplication(sys.argv)
-    window = MainWindow(world, replay)
+    window = MainWindow(world, output_path, replay)
 
-    sys.exit(App.exec_())
+    App.exec_()
+    atexit.register(release(window))
