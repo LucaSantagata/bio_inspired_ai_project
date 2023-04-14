@@ -175,6 +175,9 @@ class Car(Individual):
         """
         Calculate the fitness of an individual at the end of a generation.
         """
+
+        wheels_contacts = [wheel.contacts if wheel else None for wheel in self.ordered_wheels]
+
         func = get_ga_constant('fitness_function')
         fitness = func(max(self.max_position, 0.0),
                        self.num_wheels,
@@ -278,6 +281,11 @@ class Car(Individual):
         Determines where the car currently is in comparison to it's goal.
         Has the car died? Did it win? Etc.
         """
+
+        for wheel in self.wheels:
+            if wheel.body.__getattribute__("contacts"):
+                wheel.contacts += 1
+
         if not self.is_alive:
             return False
 

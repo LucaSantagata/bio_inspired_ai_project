@@ -40,6 +40,8 @@ class Wheel(object):
         self._mass = self.body.mass
         self._torque = 0.0
 
+        self.contacts = 0
+
     def circle_wheel(self):
         # Create fixture def + circle for wheel
         fixture_def = b2FixtureDef()
