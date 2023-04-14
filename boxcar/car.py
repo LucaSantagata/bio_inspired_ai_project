@@ -36,6 +36,8 @@ class Car(Individual):
         self.wheel_radii = wheel_radii
         self.wheel_densities = wheel_densities
 
+        self.wheels_mass = []
+
         self.wheels_vertices_pol = wheels_vertices_pol
 
         self.wheels_vertices = []
@@ -45,7 +47,9 @@ class Car(Individual):
 
         self.chassis_vertices = chassis_vertices
         self.chassis_densities = chassis_densities
+
         self.chassis_mass = 0
+
         self.winning_tile = winning_tile
         self.lowest_y_pos = lowest_y_pos
         self.lifespan = lifespan
@@ -58,6 +62,7 @@ class Car(Individual):
         self.frames = 0
         self.max_tries = get_boxcar_constant('car_max_tries')
         self.num_failures = 0
+        self.cumulative_stall_time = 0
         self.max_position = -100
         self._destroyed = False
 
@@ -99,11 +104,16 @@ class Car(Individual):
         self.num_wheels = len(self.wheels)
 
         self.chassis_mass = self.chassis.mass
-        # Calculate mass of car
-        self.mass = self.chassis.mass
-        for wheel in self.wheels:
-            self.mass += wheel.mass
 
+        # Calculate mass of car
+        self.mass = self.chassis_mass
+        for wheel in self.ordered_wheels:
+            if wheel != None:
+                self.wheels_mass.append(wheel.mass)
+                self.mass += wheel.mass
+            else:
+                self.wheels_mass.append(None)
+            
         # Calculate torque of wheel
         for wheel in self.wheels:
             if wheel.radius > 0.0 and wheel.density > 0.0:  # calc torque if b2CircleShape
@@ -318,6 +328,8 @@ class Car(Individual):
             self._destroy()
             return False
         
+        self.cumulative_stall_time += self.num_failures
+
         return True
 
     def _destroy(self) -> None:
@@ -532,9 +544,10 @@ def save_car(population_folder: str, file_name: str, individual_name: str, car: 
             str(car.fitness) + "," +
             str(car.max_position) + "," +
             str(car.chassis_mass) + "," +
-            str(car.frames) + ", " +
+            ",".join([str(wheel_mass) for wheel_mass in car.wheels_mass]) + "," +
             str(car.frames) + "," +
-            str(car.is_winner)
+            str(car.is_winner) + "," +
+            str(car.cumulative_stall_time) + ","
         )
         np.savetxt(file, np.reshape(car.chromosome, (1, 8*7)), delimiter=',', fmt="%s")
     # np.save(fname, car.chromosome)

@@ -19,6 +19,7 @@ settings['boxcar'] = {
     'max_num_section_per_tile': (10, int), # MN MODIFIED max number of sections per tile
     
     'floor_creation_type': ('gaussian', str),
+    # 'gaussian', 'ramp', 'jagged', 'holes'
     ### Floor - Gaussian random. Used when 'floor_creation_type' == 'gaussian' ###
     # Only needed if using gaussian random floor creation
     'tile_angle_mu': (8, float),
@@ -63,7 +64,7 @@ settings['boxcar'] = {
     'min_wheel_density': (40.0, float),
     'max_wheel_density': (200.0, float),
     'min_num_wheels': (0, int),
-    'max_num_wheels': (2, int),
+    'max_num_wheels': (7, int),
     'min_wheel_radius': (0.1, float),
     'max_wheel_radius': (0.5, float),
 
@@ -90,10 +91,11 @@ settings['boxcar'] = {
         "fitness," +
         "max_position," +
         "chassis_mass," +
-        "frames, " +
+        ",".join([f"wheels_mass_{i}" for i in range(0, 8)]) + 
+        "," +
         "frames," +
         "is_winner," +
-        ", " +
+        "cumulative_stall_time," +
         ",".join([f"chassis_vertices_x_{i}" for i in range(0, 8)]) +
         "," +
         ",".join([f"chassis_vertices_y_{i}" for i in range(0, 8)]) +

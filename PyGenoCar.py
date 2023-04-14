@@ -501,7 +501,7 @@ class MainWindow(QMainWindow):
                     wheel_radii = individual.wheel_radii
                     wheel_densities = individual.wheel_densities
                     wheels_vertices_pol = individual.wheels_vertices_pol
-                    #wheel_motor_speeds = individual.wheel_motor_speeds
+                    # wheel_motor_speeds = individual.wheel_motor_speeds
                     chassis_vertices = individual.chassis_vertices
                     chassis_densities = individual.chassis_densities
                     winning_tile = individual.winning_tile
