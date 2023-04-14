@@ -85,13 +85,17 @@ class Car(Individual):
         # Since the radius/density arrays are the same length as the chassis vertices, then if there is a positive
         # value, we say the wheel is at the index for the chassis vertex
         self.wheels = []
+        self.ordered_wheels = [None for _ in range(8)]
         self._wheel_attachment_vertices = []
+
         # for i, (wheel_radius, wheel_density, wheel_motor_speed) in enumerate(zip(self.wheel_radii, self.wheel_densities, self.wheel_motor_speeds)):
         for i, (wheel_radius, wheel_density, wheel_vertices) in enumerate(zip(self.wheel_radii, self.wheel_densities, self.wheels_vertices)):
             # Are both above 0?
             if wheel_radius > 0.0 and wheel_density > 0.0:
                 self.wheels.append(Wheel(self.world, wheel_radius, wheel_density, vertices=wheel_vertices)) #wheel_motor_speed)) #TODO aggiungi vertici
                 self._wheel_attachment_vertices.append(i)  # The chassis vertex this is going to attach to
+                self.ordered_wheels[i] = (self.wheels[-1])
+
         self.num_wheels = len(self.wheels)
 
         self.chassis_mass = self.chassis.mass
@@ -343,8 +347,8 @@ def create_random_car(world: b2World, winning_tile: b2Vec2, lowest_y_pos: float)
     # Create a number of random wheels.
     # Each wheel will have a random radius and density
     num_wheels = random.randint(low=get_boxcar_constant('min_num_wheels'), high=get_boxcar_constant('max_num_wheels') + 1)
-    wheels_attachment_vertices = list(range(num_wheels))  # What vertices should we attach to?
-    rand.shuffle(wheels_attachment_vertices)
+    wheels_attachment_vertices = list(range(8))   # What vertices should we attach to?
+    random.shuffle(wheels_attachment_vertices)
     wheels_attachment_vertices = wheels_attachment_vertices[:num_wheels]
     wheel_radii = [0.0 for _ in range(8)]
     wheel_densities = [0.0 for _ in range(8)]
