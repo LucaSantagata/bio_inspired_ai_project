@@ -497,7 +497,7 @@ def smart_clip(chromosome: np.ndarray) -> None:
             out=chromosome[genes['chassis_densities'], :])
 
 
-def save_car(population_folder: str, file_name: str, individual_name: str, car: Car, settings: Dict[str, Any], current_generation: int) -> None:
+def save_car(population_folder: str, file_name: str, individual_name: str, car: Car, settings: Dict[str, Any], current_generation: int, datetime: str) -> None:
     """
     Save a car. This saves one and sometimes two things:
     1. Saves the chromosome representation of the individual
@@ -508,10 +508,10 @@ def save_car(population_folder: str, file_name: str, individual_name: str, car: 
     #     os.makedirs(population_folder)
     
     # Save settings
-    if 'settings.pkl' not in os.listdir(population_folder):
-        f = os.path.join(population_folder, 'settings.pkl')
-        with open(f, 'wb') as out:
-            pickle.dump(settings, out)
+    # if 'settings.pkl' not in os.listdir(population_folder):
+    settings_fname = os.path.join(population_folder, f'settings_{datetime}.pkl')
+    with open(settings_fname, 'wb') as out:
+        pickle.dump(settings, out)
 
     fname = os.path.join(population_folder, file_name)
     with open(fname, "a") as file:
@@ -522,7 +522,7 @@ def save_car(population_folder: str, file_name: str, individual_name: str, car: 
             str(car.chassis_mass) + "," +
             str(car.frames) + ", " +
             str(car.frames) + "," +
-            str(car.is_winner) + "," +
+            str(car.is_winner)
         )
         np.savetxt(file, np.reshape(car.chromosome, (1, 8*7)), delimiter=',', fmt="%s")
     # np.save(fname, car.chromosome)

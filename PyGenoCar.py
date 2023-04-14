@@ -232,7 +232,8 @@ class GameWindow(QWidget):
 class MainWindow(QMainWindow):
     def __init__(self, world, replay=False):
         super().__init__()
-        self.file_name = (datetime.now()).strftime("%Y%m%d_%H%M") + ".csv"
+        self.datetime = (datetime.now()).strftime("%Y%m%d_%H%M")
+        self.file_name = self.datetime + ".csv"
 
         self.world = world
         self.title = 'Genetic Algorithm - Cars'
@@ -327,10 +328,10 @@ class MainWindow(QMainWindow):
                 if not os.path.exists(path):
                     # raise Exception('{} already exists. This would overwrite everything, choose a different folder or delete it and try again'.format(path))
                     os.makedirs(path)
-                save_population(path, self.file_name, self.population, settings.settings, self.current_generation)
+                save_population(path, self.file_name, self.population, settings.settings, self.current_generation, self.datetime)
             # Save best? 
             if args.save_best:
-                save_car(args.save_best, 'car_{}'.format(self.current_generation), self.population.fittest_individual, settings.settings)
+                save_car(args.save_best, 'car_{}'.format(self.current_generation), self.population.fittest_individual, settings.settings, self.current_generation, self.datetime)
 
             self._set_previous_gen_avg_fitness()
             self._set_previous_gen_num_winners()
@@ -697,8 +698,8 @@ class MainWindow(QMainWindow):
                 self.leader = leader
                 self.game_window.leader = leader
                 # should we go to the next state? 
-                if (self.current_generation == 0 and (self._total_individuals_ran >= get_ga_constant('num_parents'))) or\
-                    (self.current_generation > 0 and (self._total_individuals_ran >= self._next_gen_size)):
+                if (self.current_generation == 0 and (self._total_individuals_ran >= get_ga_constant('num_parents'))) or \
+                        (self.current_generation > 0 and (self._total_individuals_ran >= self._next_gen_size)):
                     self.state = States.NEXT_GEN
                 else:
                     self.current_batch += 1
@@ -748,7 +749,6 @@ class MainWindow(QMainWindow):
                 mutation_rate = mutation_rate / math.sqrt(self.current_generation + 1)
             gaussian_mutation(chromosome, mutation_rate, scale=get_ga_constant('gaussian_mutation_scale'))
 
-
         # Random uniform
         elif mutation_bucket == 1:
             #@TODO: add to this
@@ -786,10 +786,10 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         global args
         if args.save_pop_on_close:
-            save_population(args.save_pop_on_close, self.population, settings.settings)
+            save_population(args.save_pop_on_close, self.population, settings.settings, self.current_generation, self.datetime)
 
 
-def save_population(population_folder: str, file_name: str, population: Population, settings: Dict[str, Any], current_generation: int) -> None:
+def save_population(population_folder: str, file_name: str, population: Population, settings: Dict[str, Any], current_generation: int, datetime: str) -> None:
     """
     Saves all cars in the population
     """
@@ -806,8 +806,7 @@ def save_population(population_folder: str, file_name: str, population: Populati
     for i, car in enumerate(population.individuals):
         car_name = f'car_gen{current_generation}_id{i}'
         print('saving {} to {}'.format(car_name, population_folder))
-        save_car(population_folder, file_name, car_name, car, settings, current_generation)
-
+        save_car(population_folder, file_name, car_name, car, settings, current_generation, datetime)
 
 def parse_args():
     parser = argparse.ArgumentParser(description='PyGenoCar V1.0')
