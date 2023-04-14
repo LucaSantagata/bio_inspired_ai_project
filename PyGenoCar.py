@@ -21,7 +21,7 @@ from windows import SettingsWindow, StatsWindow, draw_border
 import os
 import sys
 import time
-from datetime import datetime 
+from datetime import datetime
 import numpy as np
 import math
 import cv2
@@ -32,6 +32,7 @@ import atexit
 scale = 70
 default_scale = 70
 FPS = 60
+
 
 @unique
 class States(Enum):
@@ -50,13 +51,16 @@ def draw_circle(painter: QPainter, body: b2Body, local=False) -> None:
     for fixture in body.fixtures:
         if isinstance(fixture.shape, b2CircleShape):
             # Set the color of the circle to be based off wheel density
-            adjust = get_boxcar_constant('max_wheel_density') - get_boxcar_constant('min_wheel_density')
+            adjust = get_boxcar_constant(
+                'max_wheel_density') - get_boxcar_constant('min_wheel_density')
             # If the min/max are the same you will get 0 adjust. This is to prevent divide by zero.
             if adjust == 0.0:
                 hue_ratio = 0.0
             else:
-                hue_ratio = (fixture.density - get_boxcar_constant('min_wheel_density')) / adjust
-            hue_ratio = min(max(hue_ratio, 0.0), 1.0)  # Just in case you leave the GA unbounded...
+                hue_ratio = (fixture.density -
+                             get_boxcar_constant('min_wheel_density')) / adjust
+            # Just in case you leave the GA unbounded...
+            hue_ratio = min(max(hue_ratio, 0.0), 1.0)
             color = QColor.fromHsvF(hue_ratio, 1., .8)
             painter.setBrush(QBrush(color, Qt.SolidPattern))
 
@@ -72,7 +76,8 @@ def draw_circle(painter: QPainter, body: b2Body, local=False) -> None:
             # Draw line (helps for visualization of how fast and direction wheel is moving)
             _set_painter_solid(painter, Qt.black)
             p0 = QPointF(center.x, center.y)
-            p1 = QPointF(center.x + radius*math.cos(body.angle), center.y + radius*math.sin(body.angle))
+            p1 = QPointF(center.x + radius*math.cos(body.angle),
+                         center.y + radius*math.sin(body.angle))
             painter.drawLine(p0, p1)
 
 
@@ -88,23 +93,27 @@ def draw_polygon(painter: QPainter, body: b2Body, poly_type: str = '', adjust_pa
             poly = []
             # If we are drawing a chassis, determine fill color
             if poly_type == 'chassis':
-                adjust = get_boxcar_constant('max_chassis_density') - get_boxcar_constant('min_chassis_density')
+                adjust = get_boxcar_constant(
+                    'max_chassis_density') - get_boxcar_constant('min_chassis_density')
                 # If the min/max are the same you will get 0 adjust. This is to prevent divide by zero.
                 if adjust == 0.0:
                     hue_ratio = 0.0
                 else:
-                    hue_ratio = (fixture.density - get_boxcar_constant('min_chassis_density')) / adjust
-                hue_ratio = min(max(hue_ratio, 0.0), 1.0)  # Just in case you leave the GA unbounded...
+                    hue_ratio = (
+                        fixture.density - get_boxcar_constant('min_chassis_density')) / adjust
+                # Just in case you leave the GA unbounded...
+                hue_ratio = min(max(hue_ratio, 0.0), 1.0)
                 color = QColor.fromHsvF(hue_ratio, 1., .8)
                 painter.setBrush(QBrush(color, Qt.SolidPattern))
-            
+
             polygon: b2PolygonShape = fixture.shape
             local_points: List[b2Vec2] = polygon.vertices
 
             if local:
                 world_coords = local_points
             else:
-                world_coords = [body.GetWorldPoint(point) for point in local_points]
+                world_coords = [body.GetWorldPoint(
+                    point) for point in local_points]
             for i in range(len(world_coords)):
                 p0 = world_coords[i]
                 if i == len(world_coords)-1:
@@ -119,7 +128,7 @@ def draw_polygon(painter: QPainter, body: b2Body, poly_type: str = '', adjust_pa
                 poly.append(qp1)
             if poly:
                 painter.drawPolygon(QPolygonF(poly))
-    
+
 
 def _set_painter_solid(painter: QPainter, color: Qt.GlobalColor, with_antialiasing: bool = True):
     _set_painter(painter, color, True, with_antialiasing)
@@ -160,7 +169,7 @@ class GameWindow(QWidget):
     def pan_camera_to_leader(self) -> None:
         diff_x = self._camera.x - self.leader.chassis.position.x
         diff_y = self._camera.y - self.leader.chassis.position.y
-        self._camera.x -= self._camera_speed * diff_x 
+        self._camera.x -= self._camera_speed * diff_x
         self._camera.y -= self._camera_speed * diff_y
 
     def pan_camera_in_direction(self, direction: str, amount: int) -> None:
@@ -174,7 +183,7 @@ class GameWindow(QWidget):
         elif direction.lower()[0] == 'r':
             diff_x = -amount
 
-        self._camera.x -= self._camera_speed * diff_x 
+        self._camera.x -= self._camera_speed * diff_x
         self._camera.y -= self._camera_speed * diff_y
 
     def _update(self):
@@ -196,15 +205,17 @@ class GameWindow(QWidget):
         draw_polygon(painter, car.chassis, poly_type='chassis')
 
     def _draw_floor(self, painter: QPainter):
-        #@TODO: Make this more efficient. Only need to draw things that are currently on the screen or about to be on screen
+        # @TODO: Make this more efficient. Only need to draw things that are currently on the screen or about to be on screen
         for tile in self.floor.floor_tiles:
             if tile is self.floor.winning_tile:
                 painter.setPen(QPen(Qt.black, 1./scale, Qt.SolidLine))
                 painter.setBrush(QBrush(Qt.green, Qt.SolidPattern))
                 painter.setRenderHint(QPainter.Antialiasing)
                 local_points: List[b2Vec2] = tile.fixtures[0].shape.vertices
-                world_coords = [tile.GetWorldPoint(point) for point in local_points]
-                qpoints = [QPointF(coord[0], coord[1]) for coord in world_coords]
+                world_coords = [tile.GetWorldPoint(
+                    point) for point in local_points]
+                qpoints = [QPointF(coord[0], coord[1])
+                           for coord in world_coords]
                 polyf = QPolygonF(qpoints)
                 painter.drawPolygon(polyf)
             else:
@@ -215,13 +226,14 @@ class GameWindow(QWidget):
         draw_border(painter, self.size)
         painter.setRenderHint(QPainter.Antialiasing)
         painter.setRenderHint(QPainter.HighQualityAntialiasing)
-        painter.translate(200 - (self._camera.x * scale) , 250 + (self._camera.y * scale))
+        painter.translate(200 - (self._camera.x * scale),
+                          250 + (self._camera.y * scale))
         # painter.translate(200,300)
         painter.scale(scale, -scale)
         arr = [Qt.black, Qt.green, Qt.blue]
         painter.setPen(QPen(Qt.black, 5, Qt.SolidLine))
         painter.setBrush(QBrush(Qt.black, Qt.SolidPattern))
-        
+
         self._draw_floor(painter)
 
         # self.draw_polygon(painter, self.chassis)
@@ -229,6 +241,7 @@ class GameWindow(QWidget):
             self._draw_car(painter, car)
         # for fixture in self.chassis.fixtures:
         #     print([self.chassis.GetWorldPoint(vert) for vert in fixture.shape.vertices])
+
 
 class MainWindow(QMainWindow):
     def __init__(self, world, path, replay=False):
@@ -247,13 +260,17 @@ class MainWindow(QMainWindow):
         self.cars = []
         self.population = Population([])
         self.state = States.FIRST_GEN
-        self._next_pop = []  # Used when you are in state 1, i.e. creating new cars from the old population
+        # Used when you are in state 1, i.e. creating new cars from the old population
+        self._next_pop = []
         self.current_batch = 1
         self.batch_size = get_boxcar_constant('run_at_a_time')
         self.gen_without_improvement = 0
         self.replay = replay
-        self.out = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (self.width, self.height))
 
+        self.out = None
+        if(path is not None):
+            self.out = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (self.width, self.height))
+        
         self.manual_control = False
 
         self.current_generation = 0
@@ -261,27 +278,30 @@ class MainWindow(QMainWindow):
         self.num_cars_alive = get_boxcar_constant('run_at_a_time')
         self.batch_size = self.num_cars_alive
         self._total_individuals_ran = 0
-        self._offset_into_population = 0  # Used if we display only a certain number at a 
+        self._offset_into_population = 0  # Used if we display only a certain number at a
         # Determine whether or not we are in the process of creating random cars.
         # This is used for when we only run so many at a time. For instance if `run_at_a_time` is 20 and
-        # `num_parents` is 1500, then we can't just create 1500 cars. Instead we create batches of 20 to 
+        # `num_parents` is 1500, then we can't just create 1500 cars. Instead we create batches of 20 to
         # run at a time. This flag is for deciding when we are done with that so we can move on to crossover
         # and mutation.
         self._creating_random_cars = True
-        
+
         # Determine how large the next generation is
         if get_ga_constant('selection_type').lower() == 'plus':
-            self._next_gen_size = get_ga_constant('num_parents') + get_ga_constant('num_offspring')
+            self._next_gen_size = get_ga_constant(
+                'num_parents') + get_ga_constant('num_offspring')
         elif get_ga_constant('selection_type').lower() == 'comma':
             self._next_gen_size = get_ga_constant('num_parents')
         else:
-            raise Exception('Selection type "{}" is invalid'.format(get_ga_constant('selection_type')))
+            raise Exception('Selection type "{}" is invalid'.format(
+                get_ga_constant('selection_type')))
 
         if self.replay:
             global args
             self.floor = Floor(self.world)
             self.state = States.REPLAY
-            self.num_replay_inds = len([x for x in os.listdir(args.replay_from_folder) if x.startswith('car_')])
+            self.num_replay_inds = len([x for x in os.listdir(
+                args.replay_from_folder) if x.startswith('car_')])
         else:
             self._set_first_gen()
         # self.population = Population(self.cars)
@@ -311,7 +331,8 @@ class MainWindow(QMainWindow):
             elif get_ga_constant('selection_type').lower() == 'comma':
                 self.state = States.NEXT_GEN_CREATE_OFFSPRING
             else:
-                raise Exception('Invalid selection_type: "{}"'.format(get_ga_constant('selection_type')))
+                raise Exception('Invalid selection_type: "{}"'.format(
+                    get_ga_constant('selection_type')))
 
             self._offset_into_population = 0
             self._total_individuals_ran = 0  # Reset back to the first individual
@@ -329,10 +350,12 @@ class MainWindow(QMainWindow):
                 if not os.path.exists(path):
                     # raise Exception('{} already exists. This would overwrite everything, choose a different folder or delete it and try again'.format(path))
                     os.makedirs(path)
-                save_population(path, self.file_name, self.population, settings.settings, self.current_generation)
-            # Save best? 
+                save_population(path, self.file_name, self.population,
+                                settings.settings, self.current_generation)
+            # Save best?
             if args.save_best:
-                save_car(args.save_best, 'car_{}'.format(self.current_generation), self.population.fittest_individual, settings.settings)
+                save_car(args.save_best, 'car_{}'.format(
+                    self.current_generation), self.population.fittest_individual, settings.settings)
 
             self._set_previous_gen_avg_fitness()
             self._set_previous_gen_num_winners()
@@ -347,21 +370,24 @@ class MainWindow(QMainWindow):
             else:
                 self.gen_without_improvement += 1
             # Set text for gen improvement
-            self.stats_window.gens_without_improvement.setText(str(self.gen_without_improvement))
+            self.stats_window.gens_without_improvement.setText(
+                str(self.gen_without_improvement))
 
             # Set the population to be just the parents allowed for reproduction. Only really matters if `plus` method is used.
             # If `plus` method is used, there can be more individuals in the next generation, so this limits the number of parents.
-            self.population.individuals = elitism_selection(self.population, get_ga_constant('num_parents'))
+            self.population.individuals = elitism_selection(
+                self.population, get_ga_constant('num_parents'))
 
             random.shuffle(self.population.individuals)
-            
+
             # Parents + offspring selection type ('plus')
             if get_ga_constant('selection_type').lower() == 'plus':
                 # Decrement lifespan
                 for individual in self.population.individuals:
                     individual.lifespan -= 1
 
-        num_offspring = min(self._next_gen_size - len(self._next_pop), get_boxcar_constant('run_at_a_time'))
+        num_offspring = min(
+            self._next_gen_size - len(self._next_pop), get_boxcar_constant('run_at_a_time'))
         self.cars = self._create_num_offspring(num_offspring)
         # Set number of cars alive
         self.num_cars_alive = len(self.cars)
@@ -430,7 +456,8 @@ class MainWindow(QMainWindow):
             (self._stats_window_sizes["w"], self._stats_window_sizes["h"])
         )
         self.stats_window.setGeometry(QRect(
-            self._stats_window_sizes["x"], self._stats_window_sizes["y"], self._stats_window_sizes["w"], self._stats_window_sizes["h"]
+            self._stats_window_sizes["x"], self._stats_window_sizes[
+                "y"], self._stats_window_sizes["w"], self._stats_window_sizes["h"]
         ))
         self.stats_window.setObjectName('stats_window')
 
@@ -439,10 +466,12 @@ class MainWindow(QMainWindow):
         # self.settings_window.setGeometry(QRect(800, 0, 300, 700))
         self.settings_window = SettingsWindow(
             self.centralWidget,
-            (self._settings_window_sizes["x"], self._settings_window_sizes["y"])
+            (self._settings_window_sizes["x"],
+             self._settings_window_sizes["y"])
         )
         self.settings_window.setGeometry(QRect(
-            self._settings_window_sizes["x"], self._settings_window_sizes["y"], self._settings_window_sizes["w"], self._settings_window_sizes["h"]
+            self._settings_window_sizes["x"], self._settings_window_sizes[
+                "y"], self._settings_window_sizes["w"], self._settings_window_sizes["h"]
         ))
         self.settings_window.setObjectName('settings_window')
 
@@ -471,8 +500,10 @@ class MainWindow(QMainWindow):
         return leader
 
     def _set_previous_gen_avg_fitness(self) -> None:
-        avg_fitness = sum(ind.fitness for ind in self.population.individuals) / len(self.population.individuals)
-        self.stats_window.average_fitness_last_gen.setText('{:.2f}'.format(avg_fitness))
+        avg_fitness = sum(
+            ind.fitness for ind in self.population.individuals) / len(self.population.individuals)
+        self.stats_window.average_fitness_last_gen.setText(
+            '{:.2f}'.format(avg_fitness))
 
     def _set_previous_gen_num_winners(self) -> None:
         winners = sum(ind.is_winner for ind in self.population.individuals)
@@ -487,7 +518,7 @@ class MainWindow(QMainWindow):
         to the next generation. Mainly used if `run_at_a_time` is < the number of individuals that are in the next generation.
         """
         next_pop: List[Individual] = []
-        #@TODO: comment this to new state
+        # @TODO: comment this to new state
         # If the selection type is plus, then it means certain individuals survive to the next generation, so we need
         # to grab those first before we create new ones
         # if get_ga_constant('selection_type').lower() == 'plus' and len(self._next_pop) < get_ga_constant('num_parents'):
@@ -495,34 +526,35 @@ class MainWindow(QMainWindow):
             # Select the subset of the individuals to bring to the next gen
             increment = 0  # How much did the offset increment by
             for idx in range(self._offset_into_population, len(self.population.individuals)):
-            # for individual in self.population.individuals[self._offset_into_population: self._offset_into_population + number_of_offspring]:
-                    individual = self.population.individuals[idx]
-                    increment += 1  # For offset
-                    world = self.world
-                    wheel_radii = individual.wheel_radii
-                    wheel_densities = individual.wheel_densities
-                    wheels_vertices_pol = individual.wheels_vertices_pol
-                    #wheel_motor_speeds = individual.wheel_motor_speeds
-                    chassis_vertices = individual.chassis_vertices
-                    chassis_densities = individual.chassis_densities
-                    winning_tile = individual.winning_tile
-                    lowest_y_pos = individual.lowest_y_pos
-                    lifespan = individual.lifespan
+                # for individual in self.population.individuals[self._offset_into_population: self._offset_into_population + number_of_offspring]:
+                individual = self.population.individuals[idx]
+                increment += 1  # For offset
+                world = self.world
+                wheel_radii = individual.wheel_radii
+                wheel_densities = individual.wheel_densities
+                wheels_vertices_pol = individual.wheels_vertices_pol
+                # wheel_motor_speeds = individual.wheel_motor_speeds
+                chassis_vertices = individual.chassis_vertices
+                chassis_densities = individual.chassis_densities
+                winning_tile = individual.winning_tile
+                lowest_y_pos = individual.lowest_y_pos
+                lifespan = individual.lifespan
 
-                    # If the individual is still alive, they survive
-                    if lifespan > 0:
-                        car = Car(world, 
-                                wheel_radii, wheel_densities, wheels_vertices_pol,  # wheel_motor_speeds,       # Wheel #TODO add vertices
-                                chassis_vertices, chassis_densities,                    # Chassis
-                                winning_tile, lowest_y_pos,
-                                lifespan)
-                        next_pop.append(car)
-                        # Check to see if we've added enough parents. The reason we check here is if you requet 5 parents but
-                        # 2/5 are dead, then you need to keep going until you get 3 good ones.
-                        if len(next_pop) == number_of_offspring:
-                            break
-                    else:
-                        print("Oh dear, you're dead")
+                # If the individual is still alive, they survive
+                if lifespan > 0:
+                    car = Car(world,
+                              # wheel_motor_speeds,       # Wheel #TODO add vertices
+                              wheel_radii, wheel_densities, wheels_vertices_pol,
+                              chassis_vertices, chassis_densities,                    # Chassis
+                              winning_tile, lowest_y_pos,
+                              lifespan)
+                    next_pop.append(car)
+                    # Check to see if we've added enough parents. The reason we check here is if you requet 5 parents but
+                    # 2/5 are dead, then you need to keep going until you get 3 good ones.
+                    if len(next_pop) == number_of_offspring:
+                        break
+                else:
+                    print("Oh dear, you're dead")
             # Increment offset for the next time
             self._offset_into_population += increment
             # If there weren't enough parents that made it to the new generation, we just accept it and move on.
@@ -538,15 +570,18 @@ class MainWindow(QMainWindow):
             while len(next_pop) < number_of_offspring:
                 # Tournament crossover
                 if get_ga_constant('crossover_selection').lower() == 'tournament':
-                    p1, p2 = tournament_selection(self.population, 2, get_ga_constant('tournament_size'))
+                    p1, p2 = tournament_selection(
+                        self.population, 2, get_ga_constant('tournament_size'))
                 # Roulette
                 elif get_ga_constant('crossover_selection').lower() == 'roulette':
                     p1, p2 = roulette_wheel_selection(self.population, 2)
                 else:
-                    raise Exception('crossover_selection "{}" is not supported'.format(get_ga_constant('crossover_selection').lower()))
+                    raise Exception('crossover_selection "{}" is not supported'.format(
+                        get_ga_constant('crossover_selection').lower()))
 
                 # Crossover
-                c1_chromosome, c2_chromosome = self._crossover(p1.chromosome, p2.chromosome)
+                c1_chromosome, c2_chromosome = self._crossover(
+                    p1.chromosome, p2.chromosome)
 
                 # Mutation
                 self._mutation(c1_chromosome)
@@ -557,8 +592,10 @@ class MainWindow(QMainWindow):
                 smart_clip(c2_chromosome)
 
                 # Create children from the new chromosomes
-                c1 = Car.create_car_from_chromosome(p1.world, p1.winning_tile, p1.lowest_y_pos, get_ga_constant('lifespan'), c1_chromosome)
-                c2 = Car.create_car_from_chromosome(p2.world, p2.winning_tile, p2.lowest_y_pos, get_ga_constant('lifespan'), c2_chromosome)
+                c1 = Car.create_car_from_chromosome(
+                    p1.world, p1.winning_tile, p1.lowest_y_pos, get_ga_constant('lifespan'), c1_chromosome)
+                c2 = Car.create_car_from_chromosome(
+                    p2.world, p2.winning_tile, p2.lowest_y_pos, get_ga_constant('lifespan'), c2_chromosome)
 
                 # Add children to the next generation
                 next_pop.extend([c1, c2])
@@ -566,13 +603,14 @@ class MainWindow(QMainWindow):
         # Return the next population that will play. Remember, this can be a subset of the overall population since
         # those parents still exist.
         return next_pop
-    
+
     def _increment_generation(self) -> None:
         """
         Increments the generation and sets the label
         """
         self.current_generation += 1
-        self.stats_window.generation.setText("<font color='red'>" + str(self.current_generation + 1) + '</font>')
+        self.stats_window.generation.setText(
+            "<font color='red'>" + str(self.current_generation + 1) + '</font>')
 
     def _set_first_gen(self) -> None:
         """
@@ -592,14 +630,17 @@ class MainWindow(QMainWindow):
         if get_ga_constant('num_parents') - self._total_individuals_ran >= get_boxcar_constant('run_at_a_time'):
             num_to_create = get_boxcar_constant('run_at_a_time')
         else:
-            num_to_create = get_ga_constant('num_parents') - self._total_individuals_ran
+            num_to_create = get_ga_constant(
+                'num_parents') - self._total_individuals_ran
 
         # @NOTE that I create the subset of cars
         for i in range(num_to_create):
-            car = create_random_car(self.world, self.floor.winning_tile, self.floor.lowest_y)
+            car = create_random_car(
+                self.world, self.floor.winning_tile, self.floor.lowest_y)
             self.cars.append(car)
-        
-        self._next_pop.extend(self.cars)  # Add the cars to the next_pop which is used by population
+
+        # Add the cars to the next_pop which is used by population
+        self._next_pop.extend(self.cars)
 
         leader = self.find_new_leader()
         self.leader = leader
@@ -616,8 +657,10 @@ class MainWindow(QMainWindow):
         total_for_gen = get_ga_constant('num_parents')
         if self.current_generation > 0:
             total_for_gen = self._next_gen_size
-        num_batches = math.ceil(total_for_gen / get_boxcar_constant('run_at_a_time'))
-        text = '{}/{} (batch {}/{})'.format(self.num_cars_alive, self.batch_size, self.current_batch, num_batches)
+        num_batches = math.ceil(
+            total_for_gen / get_boxcar_constant('run_at_a_time'))
+        text = '{}/{} (batch {}/{})'.format(self.num_cars_alive,
+                                            self.batch_size, self.current_batch, num_batches)
         self.stats_window.current_num_alive.setText(text)
 
     def _set_max_fitness(self) -> None:
@@ -663,16 +706,21 @@ class MainWindow(QMainWindow):
             # Replay state
             if self.state == States.REPLAY:
                 name = 'car_{}.npy'.format(self.current_generation)
-                car = load_car(self.world, self.floor.winning_tile, self.floor.lowest_y, np.inf, args.replay_from_folder, name)
+                car = load_car(self.world, self.floor.winning_tile,
+                               self.floor.lowest_y, np.inf, args.replay_from_folder, name)
                 self.cars = [car]
                 self.game_window.cars = self.cars
                 self.leader = self.find_new_leader()
                 self.game_window.leader = self.leader
                 self.current_generation += 1
-                txt = 'Replay {}/{}'.format(self.current_generation, self.num_replay_inds)
-                self.stats_window.generation.setText("<font color='red'>Replay</font>")
-                self.stats_window.pop_size.setText("<font color='red'>Replay</font>")
-                self.stats_window.current_num_alive.setText("<font color='red'>" + txt + '</font>')
+                txt = 'Replay {}/{}'.format(self.current_generation,
+                                            self.num_replay_inds)
+                self.stats_window.generation.setText(
+                    "<font color='red'>Replay</font>")
+                self.stats_window.pop_size.setText(
+                    "<font color='red'>Replay</font>")
+                self.stats_window.current_num_alive.setText(
+                    "<font color='red'>" + txt + '</font>')
                 return
             # Are we still in the process of just random creation?
             if self.state in (States.FIRST_GEN, States.FIRST_GEN_IN_PROGRESS):
@@ -687,20 +735,22 @@ class MainWindow(QMainWindow):
             # Next N individuals need to run
             # We already have a population defined and we need to create N cars to run
             elif self.state == States.NEXT_GEN_CREATE_OFFSPRING:
-                num_create = min(self._next_gen_size - self._total_individuals_ran, get_boxcar_constant('run_at_a_time'))
+                num_create = min(
+                    self._next_gen_size - self._total_individuals_ran, get_boxcar_constant('run_at_a_time'))
 
                 self.cars = self._create_num_offspring(num_create)
                 self.batch_size = len(self.cars)
                 self.num_cars_alive = len(self.cars)
-                
-                self._next_pop.extend(self.cars)  # These cars will now be part of the next pop
+
+                # These cars will now be part of the next pop
+                self._next_pop.extend(self.cars)
                 self.game_window.cars = self.cars
                 leader = self.find_new_leader()
                 self.leader = leader
                 self.game_window.leader = leader
-                # should we go to the next state? 
+                # should we go to the next state?
                 if (self.current_generation == 0 and (self._total_individuals_ran >= get_ga_constant('num_parents'))) or\
-                    (self.current_generation > 0 and (self._total_individuals_ran >= self._next_gen_size)):
+                        (self.current_generation > 0 and (self._total_individuals_ran >= self._next_gen_size)):
                     self.state = States.NEXT_GEN
                 else:
                     self.current_batch += 1
@@ -710,12 +760,14 @@ class MainWindow(QMainWindow):
                 self.next_generation()
                 return
             else:
-                raise Exception('You should not be able to get here, but if you did, awesome! Report this to me if you actually get here.')
+                raise Exception(
+                    'You should not be able to get here, but if you did, awesome! Report this to me if you actually get here.')
 
         self.world.ClearForces()
 
         # Add screenshot of the image to the video
-        self.addImageToVideo()
+        if self.out != None:
+            self.addImageToVideo()
 
         # Update windows
         self.game_window._update()
@@ -735,7 +787,8 @@ class MainWindow(QMainWindow):
             # c1_chromosome, c2_chromosome = SBX(p1_chromosome, p2_chromosome, get_ga_constant('SBX_eta'))
             c1_chromosome, c2_chromosome = SPBX(p1_chromosome, p2_chromosome)
         else:
-            raise Exception('Unable to determine valid crossover based off probabilities')
+            raise Exception(
+                'Unable to determine valid crossover based off probabilities')
 
         return c1_chromosome, c2_chromosome
 
@@ -750,26 +803,30 @@ class MainWindow(QMainWindow):
         if mutation_bucket == 0:
             mutation_rate = get_ga_constant('mutation_rate')
             if get_ga_constant('mutation_rate_type').lower() == 'dynamic':
-                mutation_rate = mutation_rate / math.sqrt(self.current_generation + 1)
-            gaussian_mutation(chromosome, mutation_rate, scale=get_ga_constant('gaussian_mutation_scale'))
-
+                mutation_rate = mutation_rate / \
+                    math.sqrt(self.current_generation + 1)
+            gaussian_mutation(chromosome, mutation_rate,
+                              scale=get_ga_constant('gaussian_mutation_scale'))
 
         # Random uniform
         elif mutation_bucket == 1:
-            #@TODO: add to this
+            # @TODO: add to this
             pass
         else:
-            raise Exception('Unable to determine valid mutation based off probabilities')
-        
+            raise Exception(
+                'Unable to determine valid mutation based off probabilities')
+
     def addImageToVideo(self):
         pixmap = QPixmap(self.width, self.height)
         self.render(pixmap)
         qimage = pixmap.toImage()
-        buffer = qimage.bits().asstring(qimage.width() * qimage.height() * qimage.depth() // 8)
-        qimage_array = np.frombuffer(buffer, dtype=np.uint8).reshape((qimage.height(), qimage.width(), qimage.depth() // 8))
+        buffer = qimage.bits().asstring(
+            qimage.width() * qimage.height() * qimage.depth() // 8)
+        qimage_array = np.frombuffer(buffer, dtype=np.uint8).reshape(
+            (qimage.height(), qimage.width(), qimage.depth() // 8))
         mat = cv2.cvtColor(qimage_array, cv2.COLOR_BGR2RGB)
         self.out.write(mat)
-    
+
     def keyPressEvent(self, event):
         global scale, default_scale
         key = event.key()
@@ -800,10 +857,12 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         global args
         if args.save_pop_on_close:
-            save_population(args.save_pop_on_close, self.population, settings.settings)
+            save_population(args.save_pop_on_close,
+                            self.population, settings.settings)
 
     def getVideo(self):
         return self.out
+
 
 def save_population(population_folder: str, file_name: str, population: Population, settings: Dict[str, Any], current_generation: int) -> None:
     """
@@ -822,47 +881,76 @@ def save_population(population_folder: str, file_name: str, population: Populati
     for i, car in enumerate(population.individuals):
         car_name = f'car_gen{current_generation}_id{i}'
         print('saving {} to {}'.format(car_name, population_folder))
-        save_car(population_folder, file_name, car_name, car, settings, current_generation)
+        save_car(population_folder, file_name, car_name,
+                 car, settings, current_generation)
 
 
 def parse_args():
     parser = argparse.ArgumentParser(description='PyGenoCar V1.0')
     # Save
-    parser.add_argument('--save-best', dest='save_best', type=str, help='destination folder to save best individiuals after each gen')
-    parser.add_argument('--save-pop', dest='save_pop', type=str, help='destination folder to save population after each gen')
-    parser.add_argument('--save-pop-on-close', dest='save_pop_on_close', type=str, help='destination to save the population when program exits')
+    parser.add_argument('--save-best', dest='save_best', type=str,
+                        help='destination folder to save best individiuals after each gen')
+    parser.add_argument('--save-pop', dest='save_pop', type=str,
+                        help='destination folder to save population after each gen')
+    parser.add_argument('--save-pop-on-close', dest='save_pop_on_close',
+                        type=str, help='destination to save the population when program exits')
+
+    # Video
+    parser.add_argument('--save-video', dest='save_video',
+                        type=str, help='name of video to save')
 
     # Replay @NOTE: Only supports replaying the best individual. Not a list of populations.
-    parser.add_argument('--replay-from-folder', dest='replay_from_folder', type=str, help='destination to replay individuals from')
+    parser.add_argument('--replay-from-folder', dest='replay_from_folder',
+                        type=str, help='destination to replay individuals from')
 
     args = parser.parse_args()
     return args
+
 
 def release(win):
     win.getVideo().release()
     sys.exit()
 
-
 if __name__ == "__main__":
     global args
     args = parse_args()
     replay = False
-    
+
     if args.replay_from_folder:
         if 'settings.pkl' not in os.listdir(args.replay_from_folder):
-            raise Exception('settings.pkl not found within {}'.format(args.replay_from_folder))
+            raise Exception('settings.pkl not found within {}'.format(
+                args.replay_from_folder))
         settings_path = os.path.join(args.replay_from_folder, 'settings.pkl')
         with open(settings_path, 'rb') as f:
             settings.settings = pickle.load(f)
         replay = True
 
-    current_dir = os.getcwd()
-    output_file = "output_video.mp4"
-    output_path = os.path.join(current_dir, output_file)
+    # current_dir = os.getcwd()
+
+    path_dir = os.path.abspath("video")
+
+    if os.path.exists(path_dir):
+        os.chdir(path_dir)
+        current_dir = os.getcwd()
+    else:
+        try:
+            os.mkdir(path_dir)
+            current_dir = path_dir
+        except OSError as e:
+            print("Errore nella creazione della cartella:", e)
+
+    if args.save_video:
+        output_file = args.save_video + "_" + datetime.now().strftime("%d%m%Y_%H%M") + ".mp4"
+        output_path = os.path.join(current_dir, output_file)
+    else:
+        output_path = None
 
     world = b2World(get_boxcar_constant('gravity'))
     App = QApplication(sys.argv)
     window = MainWindow(world, output_path, replay)
 
-    App.exec_()
-    atexit.register(release(window))
+    if args.save_video:
+        App.exec_()
+        atexit.register(release(window))
+    else:
+        sys.exit(App.exec_())
