@@ -86,25 +86,27 @@ settings['boxcar'] = {
     'run_at_a_time': (20, int),
 
     "population_headers": (
-        "generation, " +
-        "fitness, " +
-        "max_position, " +
-        "mass, " +
+        "generation," +
+        "fitness," +
+        "max_position," +
+        "chassis_mass," +
         "frames, " +
-        "is_winner, " +
-        ", ".join([f"chassis_vertices_x_{i}" for i in range(0, 8)]) +
+        "frames," +
+        "is_winner," +
         ", " +
-        ", ".join([f"chassis_vertices_y_{i}" for i in range(0, 8)]) +
-        ", " +
-        ", ".join([f"chassis_densities_{i}" for i in range(0, 8)]) +
-        ", " +
-        ", ".join([f"wheel_radii_{i}" for i in range(0, 8)]) +
-        ", " +
-        ", ".join([f"wheel_densities_{i}" for i in range(0, 8)]) +
-        ", " +
-        ", ".join([f"wheels_vertices_r_{i}" for i in range(0, 8)]) +
-        ", " +
-        ", ".join([f"wheels_vertices_theta_{i}" for i in range(0, 8)]) +
+        ",".join([f"chassis_vertices_x_{i}" for i in range(0, 8)]) +
+        "," +
+        ",".join([f"chassis_vertices_y_{i}" for i in range(0, 8)]) +
+        "," +
+        ",".join([f"chassis_densities_{i}" for i in range(0, 8)]) +
+        "," +
+        ",".join([f"wheel_radii_{i}" for i in range(0, 8)]) +
+        "," +
+        ",".join([f"wheel_densities_{i}" for i in range(0, 8)]) +
+        "," +
+        ",".join([f"wheels_vertices_r_{i}" for i in range(0, 8)]) +
+        "," +
+        ",".join([f"wheels_vertices_theta_{i}" for i in range(0, 8)]) +
         "\n",
         # "chassis_vertices_x, chassis_vertices_y, chassis_densities, wheel_radii, wheel_densities, wheels_vertices_r, wheels_vertices_theta\n",
         str

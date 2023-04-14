@@ -45,6 +45,7 @@ class Car(Individual):
 
         self.chassis_vertices = chassis_vertices
         self.chassis_densities = chassis_densities
+        self.chassis_mass = 0
         self.winning_tile = winning_tile
         self.lowest_y_pos = lowest_y_pos
         self.lifespan = lifespan
@@ -93,6 +94,7 @@ class Car(Individual):
                 self._wheel_attachment_vertices.append(i)  # The chassis vertex this is going to attach to
         self.num_wheels = len(self.wheels)
 
+        self.chassis_mass = self.chassis.mass
         # Calculate mass of car
         self.mass = self.chassis.mass
         for wheel in self.wheels:
@@ -514,12 +516,13 @@ def save_car(population_folder: str, file_name: str, individual_name: str, car: 
     fname = os.path.join(population_folder, file_name)
     with open(fname, "a") as file:
         file.write(
-            str(current_generation) + ", " +
-            str(car.fitness) + ", " +
-            str(car.max_position) + ", " +
-            str(car.mass) + ", " +
+            str(current_generation) + "," +
+            str(car.fitness) + "," +
+            str(car.max_position) + "," +
+            str(car.chassis_mass) + "," +
             str(car.frames) + ", " +
-            str(car.is_winner) + ", "
+            str(car.frames) + "," +
+            str(car.is_winner) + "," +
         )
         np.savetxt(file, np.reshape(car.chromosome, (1, 8*7)), delimiter=',', fmt="%s")
     # np.save(fname, car.chromosome)
