@@ -52,7 +52,7 @@ settings['boxcar'] = {
     'jagged_decreasing_angle': (45, float),
 
     # Car
-    'car_max_tries': (120, int),
+    'car_max_tries': (20, int),
 
     # Chassis
     'min_chassis_axis': (0.1, float),
