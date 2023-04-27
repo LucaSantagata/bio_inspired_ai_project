@@ -36,7 +36,7 @@ class Car(Individual):
         self.wheel_radii = wheel_radii
         self.wheel_densities = wheel_densities
 
-        self.wheels_mass = []
+        self.wheels_masses = []
 
         self.wheels_vertices_pol = wheels_vertices_pol
 
@@ -106,13 +106,16 @@ class Car(Individual):
         self.chassis_mass = self.chassis.mass
 
         # Calculate mass of car
-        self.mass = self.chassis_mass
+        # self.mass = self.chassis_mass
+        self.wheels_mass = 0.0
         for wheel in self.ordered_wheels:
             if wheel != None:
-                self.wheels_mass.append(wheel.mass)
-                self.mass += wheel.mass
+                self.wheels_masses.append(wheel.mass)
+                self.wheels_mass += wheel.mass
             else:
-                self.wheels_mass.append(None)
+                self.wheels_masses.append(None)
+
+        self.mass = self.chassis_mass + self.wheels_mass
             
         # Calculate torque of wheel
         for wheel in self.wheels:
@@ -174,7 +177,7 @@ class Car(Individual):
         2. You can replay from chromosomes you save.
         """
         car = Car(world, 
-                  None, None, None, # None,  # Wheel stuff set to None
+                  None, None, None,  # None,  # Wheel stuff set to None
                   None, None,        # Chassis stuff set to None
                   winning_tile, lowest_y_pos, lifespan, from_chromosome=True)
         car._chromosome = np.copy(chromosome)
@@ -186,15 +189,56 @@ class Car(Individual):
         Calculate the fitness of an individual at the end of a generation.
         """
 
-        wheels_contacts = [wheel.contacts if wheel else None for wheel in self.ordered_wheels]
+        # TODO calc contacts of each wheel and add to fitness
+        print(f"CAR's WHEELS ({self.num_wheels}, {self._wheel_attachment_vertices}):", self.ordered_wheels)
+        #
+        # print("Wheel[0] contacts:", self.wheels[0].body.__getattribute__("contacts"))
 
-        func = get_ga_constant('fitness_function')
-        fitness = func(max(self.max_position, 0.0),
-                       self.num_wheels,
-                       self.chassis_volume,
-                       self.wheels_volume,
-                       self.frames)
+        wheels_contacts = np.array([wheel.contacts if wheel else np.inf for wheel in self.ordered_wheels])
+        # for i, wheel in enumerate(self.ordered_wheels):
+        #     if wheel:
+        #         print(f"Wheel[{i}] touched {wheel.contacts} times")
+
+        print(wheels_contacts)
+
+        print("///" * 8)
+        # func = get_ga_constant('fitness_function')
+        # fitness = func(max(self.max_position, 0.0),
+        #                self.num_wheels,
+        #                self.chassis_volume,
+        #                self.wheels_volume,
+        #                self.frames)
+
+        func = get_ga_constant('fitness_function2')
+        fitness = func(
+            max(self.max_position, 0.0),
+            int(self.is_winner),
+            self.num_wheels,
+            get_ga_constant("max_contacts_penalty"),
+            get_ga_constant("contacts_threshold"),
+            wheels_contacts,
+            self.frames,
+            self.chassis_volume,
+            self.chassis_mass,
+            self.wheels_volume,
+            self.wheels_mass,
+            self.cumulative_stall_time
+        )
+
+        print("max_position:", self.max_position)
+        print("is_winner:", self.is_winner)
+        print("num_wheels:", self.num_wheels)
+        print("wheels_contacts:", wheels_contacts)
+        print("frames:", self.frames)
+        print("chassis_volume:", self.chassis_volume)
+        print("chassis_mass:", self.chassis_mass)
+        print("wheels_volume:", self.wheels_volume)
+        print("wheels_mass:", self.wheels_mass)
+        print("cumulative_stall_time:", self.cumulative_stall_time)
+
         self._fitness = max(fitness, 0.0001)
+
+        print("FITNESS FUNCTION:", fitness)
         
     @property
     def fitness(self) -> float:
@@ -265,26 +309,26 @@ class Car(Individual):
     def chromosome(self):
         return self._chromosome
 
-    def clone(self):
-        world = self.world
-        wheels = []
-        for wheel in self.wheels:
-            radius = wheel.radius
-            density = wheel.density
-            restitution = wheel.restitution
-            vertices = wheel.vertices
-            wheels.append(Wheel(world, radius, density, restitution, vertices=vertices))
-
-        wheel_attachment_vertices = self._wheel_attachment_vertices[:]
-        wheels_vertices_pol = self.wheels_vertices_pol[:]
-        chassis_vertices = self.chassis_vertices[:]
-        chassis_densities = self.chassis_densities[:]
-        winning_tile = self.winning_tile
-        lowest_y_pos = self.lowest_y_pos
-
-        return Car(world, wheels, wheel_attachment_vertices, wheels_vertices_pol,
-                 chassis_vertices, chassis_densities,
-                 winning_tile, lowest_y_pos, True)
+    # def clone(self):
+    #     world = self.world
+    #     wheels = []
+    #     for wheel in self.wheels:
+    #         radius = wheel.radius
+    #         density = wheel.density
+    #         restitution = wheel.restitution
+    #         vertices = wheel.vertices
+    #         wheels.append(Wheel(world, radius, density, restitution, vertices=vertices))
+    #
+    #     wheel_attachment_vertices = self._wheel_attachment_vertices[:]
+    #     wheels_vertices_pol = self.wheels_vertices_pol[:]
+    #     chassis_vertices = self.chassis_vertices[:]
+    #     chassis_densities = self.chassis_densities[:]
+    #     winning_tile = self.winning_tile
+    #     lowest_y_pos = self.lowest_y_pos
+    #
+    #     return Car(world, wheels, wheel_attachment_vertices, wheels_vertices_pol,
+    #              chassis_vertices, chassis_densities,
+    #              winning_tile, lowest_y_pos, True)
 
     def update(self) -> bool:
         """
@@ -530,7 +574,7 @@ def save_car(population_folder: str, file_name: str, individual_name: str, car: 
     # Make the population folder if it doesn't exist
     # if not os.path.exists(population_folder):
     #     os.makedirs(population_folder)
-    
+
     # Save settings
     # if 'settings.pkl' not in os.listdir(population_folder):
     settings_fname = os.path.join(population_folder, f'settings_{datetime}.pkl')
@@ -544,7 +588,7 @@ def save_car(population_folder: str, file_name: str, individual_name: str, car: 
             str(car.fitness) + "," +
             str(car.max_position) + "," +
             str(car.chassis_mass) + "," +
-            ",".join([str(wheel_mass) for wheel_mass in car.wheels_mass]) + "," +
+            ",".join([str(wheel_mass) for wheel_mass in car.wheels_masses]) + "," +
             str(car.frames) + "," +
             str(car.is_winner) + "," +
             str(car.cumulative_stall_time) + ","

@@ -5,7 +5,6 @@ from .individual import Individual
 from settings import get_boxcar_constant, get_ga_constant
 from encode_decode_chromosome_vertices import pol2b2Vec2, wheels_vertices_pol_to_wheels_vertices, rs_thetas_encoding, rs_thetas_to_string, string_to_rs_thetas
 
-
 min_wheel_vertices_radius = get_boxcar_constant("min_wheel_vertices_radius")
 max_wheel_vertices_radius = get_boxcar_constant("max_wheel_vertices_radius")
 max_num_wheels_vertices = get_boxcar_constant("max_num_wheels_vertices")
@@ -14,7 +13,7 @@ max_num_wheels_vertices = get_boxcar_constant("max_num_wheels_vertices")
 def mutate_vertex(r: float, theta: int, prob_mutation: float) -> tuple:
     if np.random.random() <= prob_mutation:
         r += (
-                     (np.random.random() * (max_wheel_vertices_radius - min_wheel_vertices_radius)) + min_wheel_vertices_radius
+                (np.random.random() * (max_wheel_vertices_radius - min_wheel_vertices_radius)) + min_wheel_vertices_radius
              ) / (max_wheel_vertices_radius - min_wheel_vertices_radius)
 
     if np.random.random() <= prob_mutation:
@@ -69,6 +68,32 @@ def gaussian_mutation(chromosome: np.ndarray, prob_mutation: float,
 
     # Update
     chromosome_without_vertices[mutation_array] += gaussian_mutation[mutation_array]
+
+    # TODO check circle wheels and look if radiuses and densities are less than min_wheel_radius and min_wheel_density, else set to 0
+    # print("GAUSSIAN MUTATION:", gaussian_mutation)
+    # print("GAUSSIAN MUTATION LAST TWO:", gaussian_mutation[-2:, :])
+    #
+    # print("chromosome_without_vertices:", chromosome_without_vertices)
+    # print("chromosome_without_vertices LAST TWO:", chromosome_without_vertices[-2:, :])
+
+    chromosome_without_vertices[-2:-1, :][
+        chromosome_without_vertices[-2:-1, :] <= get_boxcar_constant("min_wheel_radius")
+    ] = 0.0  # get_boxcar_constant("min_wheel_radius")
+    chromosome_without_vertices[-2:-1, :][
+        chromosome_without_vertices[-2:-1, :] > get_boxcar_constant("max_wheel_radius")
+        ] = get_boxcar_constant("max_wheel_radius")
+
+    chromosome_without_vertices[-1:, :][
+        chromosome_without_vertices[-1:, :] <= get_boxcar_constant("min_wheel_density")
+        ] = 0.0  # get_boxcar_constant("min_wheel_density")
+    chromosome_without_vertices[-1:, :][
+        chromosome_without_vertices[-1:, :] > get_boxcar_constant("max_wheel_density")
+    ] = get_boxcar_constant("max_wheel_density")
+
+    # print(chromosome_without_vertices[-2:-1, :])
+    # print(chromosome_without_vertices[-1:, :])
+    # print("$"*10)
+
     chromosome_only_vertices = decode_encode_mutate_vertices(chromosome_only_vertices, prob_mutation)
     chromosome = np.concatenate((chromosome_without_vertices, chromosome_only_vertices), axis=0)
 
