@@ -42,6 +42,7 @@ class States(Enum):
     NEXT_GEN_COPY_PARENTS_OVER = 4
     NEXT_GEN_CREATE_OFFSPRING = 5
     REPLAY = 6
+    STOP = 7
 
 
 def draw_circle(painter: QPainter, body: b2Body, local=False) -> None:
@@ -269,7 +270,7 @@ class MainWindow(QMainWindow):
         self.replay = replay
 
         self.out = None
-        if(path is not None):
+        if (path is not None):
             self.out = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (self.width, self.height))
         
         self.manual_control = False
@@ -348,6 +349,7 @@ class MainWindow(QMainWindow):
             # Should we save the pop
             if args.save_pop:
                 path = args.save_pop
+
                 if not os.path.exists(path):
                     # raise Exception('{} already exists. This would overwrite everything, choose a different folder or delete it and try again'.format(path))
                     os.makedirs(path)
@@ -385,8 +387,7 @@ class MainWindow(QMainWindow):
                 for individual in self.population.individuals:
                     individual.lifespan -= 1
 
-        num_offspring = min(
-            self._next_gen_size - len(self._next_pop), get_boxcar_constant('run_at_a_time'))
+        num_offspring = min(self._next_gen_size - len(self._next_pop), get_boxcar_constant('run_at_a_time'))
         self.cars = self._create_num_offspring(num_offspring)
         # Set number of cars alive
         self.num_cars_alive = len(self.cars)
@@ -672,6 +673,10 @@ class MainWindow(QMainWindow):
         """
         Called once every 1/FPS to update everything
         """
+
+        if self.state == States.STOP:
+            sys.exit(App.exec_())
+
         for car in self.cars:
             if not car.is_alive:
                 continue
@@ -747,7 +752,7 @@ class MainWindow(QMainWindow):
                 leader = self.find_new_leader()
                 self.leader = leader
                 self.game_window.leader = leader
-                # should we go to the next state? 
+                # should we go to the next state?
                 if (self.current_generation == 0 and (self._total_individuals_ran >= get_ga_constant('num_parents'))) or \
                         (self.current_generation > 0 and (self._total_individuals_ran >= self._next_gen_size)):
                     self.state = States.NEXT_GEN
@@ -773,6 +778,9 @@ class MainWindow(QMainWindow):
 
         # Step
         self.world.Step(1./FPS, 10, 6)
+
+        if self.current_generation > get_ga_constant("max_generations"):
+            self.state = States.STOP
 
     def _crossover(self, p1_chromosome: np.ndarray, p2_chromosome: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
@@ -819,11 +827,9 @@ class MainWindow(QMainWindow):
         pixmap = QPixmap(self.width, self.height)
         self.render(pixmap)
         qimage = pixmap.toImage()
-        buffer = qimage.bits().asstring(
-            qimage.width() * qimage.height() * qimage.depth() // 8)
-        qimage_array = np.frombuffer(buffer, dtype=np.uint8).reshape(
-            (qimage.height(), qimage.width(), qimage.depth() // 8))
-        mat = cv2.cvtColor(qimage_array, cv2.COLOR_BGR2RGB)
+        buffer = qimage.bits().asstring(qimage.width() * qimage.height() * qimage.depth() // 8)
+        qimage_array = np.frombuffer(buffer, dtype=np.uint8).reshape((qimage.height(), qimage.width(), qimage.depth() // 8))
+        mat = cv2.cvtColor(qimage_array, cv2.COLOR_RGBA2RGB)
         self.out.write(mat)
 
     def keyPressEvent(self, event):
@@ -861,6 +867,7 @@ class MainWindow(QMainWindow):
     def getVideo(self):
         return self.out
 
+
 def save_population(population_folder: str, file_name: str, population: Population, settings: Dict[str, Any], current_generation: int, datetime: str) -> None:
     """
     Saves all cars in the population
@@ -879,6 +886,7 @@ def save_population(population_folder: str, file_name: str, population: Populati
         car_name = f'car_gen{current_generation}_id{i}'
         print('saving {} to {}'.format(car_name, population_folder))
         save_car(population_folder, file_name, car_name, car, settings, current_generation, datetime)
+
 
 def parse_args():
     parser = argparse.ArgumentParser(description='PyGenoCar V1.0')
@@ -906,6 +914,7 @@ def release(win):
     win.getVideo().release()
     sys.exit()
 
+
 if __name__ == "__main__":
     global args
     args = parse_args()
@@ -920,23 +929,12 @@ if __name__ == "__main__":
             settings.settings = pickle.load(f)
         replay = True
 
-    # current_dir = os.getcwd()
-
-    path_dir = os.path.abspath("video")
-
-    if os.path.exists(path_dir):
-        os.chdir(path_dir)
-        current_dir = os.getcwd()
-    else:
-        try:
-            os.mkdir(path_dir)
-            current_dir = path_dir
-        except OSError as e:
-            print("Errore nella creazione della cartella:", e)
-
     if args.save_video:
-        output_file = args.save_video + "_" + datetime.now().strftime("%d%m%Y_%H%M") + ".mp4"
-        output_path = os.path.join(current_dir, output_file)
+        output_file = "video_" + datetime.now().strftime("%d%m%Y_%H%M") + ".mp4"
+        output_path = os.path.join(args.save_video, output_file)
+        if not os.path.exists(args.save_video):
+            # raise Exception('{} already exists. This would overwrite everything, choose a different folder or delete it and try again'.format(path))
+            os.makedirs(args.save_video)
     else:
         output_path = None
 

@@ -117,6 +117,8 @@ settings['boxcar'] = {
 
 # Genetic algorithm specific settings
 settings['ga'] = {
+    "max_generations": (10, int),
+
     # Selection
     # 'num_parents': (60, int),
     # 'num_offspring': (60, int),
