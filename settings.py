@@ -19,8 +19,8 @@ settings['boxcar'] = {
     'min_num_section_per_tile': (10, int), # MN MODIFIED min number of sections per tile
     'max_num_section_per_tile': (10, int), # MN MODIFIED max number of sections per tile
     
+    # Type of floor : 'gaussian', 'ramp', 'jagged', 'holes'
     'floor_creation_type': ('gaussian', str),
-    # 'gaussian', 'ramp', 'jagged', 'holes'
     ### Floor - Gaussian random. Used when 'floor_creation_type' == 'gaussian' ###
     # Only needed if using gaussian random floor creation
     'tile_angle_mu': (8, float),
@@ -182,6 +182,11 @@ settings['ga'] = {
         )
 }
 
+settings['window'] = {
+    'width': (1920, int),
+    'height': (1080, int)
+}
+
 
 def fitness_scale_function(x: float) -> float:
     return math.exp(x) if x <= 0 else (math.pow((x / math.e), (3/4)) + 1)
@@ -241,6 +246,8 @@ def _get_constant(constant: str, controller: str) -> Any:
     __settings_cache[(constant, controller)] = value
     return value
 
+def get_window_constant(constant: str) -> Any:
+    return _get_constant(constant, 'window')
 
 def get_boxcar_constant(constant: str) -> Any:
     return _get_constant(constant, 'boxcar')

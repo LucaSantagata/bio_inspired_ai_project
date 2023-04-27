@@ -15,7 +15,7 @@ from genetic_algorithm.individual import Individual
 from genetic_algorithm.crossover import single_point_binary_crossover as SPBX
 from genetic_algorithm.mutation import gaussian_mutation
 from genetic_algorithm.selection import elitism_selection, roulette_wheel_selection, tournament_selection
-from settings import get_boxcar_constant, get_ga_constant
+from settings import get_boxcar_constant, get_ga_constant, get_window_constant
 import settings
 from windows import SettingsWindow, StatsWindow, draw_border
 import os
@@ -255,8 +255,8 @@ class MainWindow(QMainWindow):
         self.top = 150
         self.left = 150
 
-        self.width = 1920
-        self.height = 1080
+        self.width = get_window_constant('width')
+        self.height = get_window_constant('height')
 
         self.max_fitness = 0.0
         self.cars = []
