@@ -140,6 +140,9 @@ settings['ga'] = {
     'crossover_selection': ('roulette', str),
     'tournament_size': (5, int),
 
+    "max_contacts_penalty": (50, int),
+    "contacts_threshold": (10, int),
+
     # Fitness function
     'fitness_function': (lambda max_position, num_wheels, total_chassis_volume, total_wheels_volume, frames:
                          (max_position * 3) ** 3.5 -
@@ -149,6 +152,31 @@ settings['ga'] = {
                          frames,
                          type(lambda x: x)
                          ),
+
+    "fitness_function2":
+        (
+            lambda max_position, is_winner, num_wheels, max_contacts_penalty, contacts_threshold, wheels_contacts, frames, chassis_volume,
+            chassis_mass, wheels_volume, wheels_mass, cumulative_stall_time:
+            (
+                10 * max_position +  # 10e4
+                1000 * is_winner -  # 10e3
+                50 * num_wheels -  # 10e2
+                np.sum(
+                    [
+                        (-max_contacts_penalty/contacts_threshold) * contacts + max_contacts_penalty
+                        if contacts <= contacts_threshold else 0
+                        for contacts in wheels_contacts
+                    ]
+                ) -  # 10e2
+                (1 / (is_winner + 0.10)) * (frames / 100) -  # 10e2
+                chassis_mass -  # 10e2
+                100 * chassis_volume -  # 10e2
+                wheels_mass / 10 -  # 10e2
+                10 * wheels_volume -  # 10e2
+                10 * cumulative_stall_time  # 10e2 (massimo 10e5)
+            ) + 10e5,
+            type(lambda x: x)
+        )
 }
 
 
