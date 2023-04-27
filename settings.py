@@ -1,5 +1,6 @@
 from typing import Any, Tuple
 import numpy as np
+import math
 
 # Settings that control everything.
 settings = {}
@@ -159,7 +160,7 @@ settings['ga'] = {
         (
             lambda max_position, is_winner, num_wheels, max_contacts_penalty, contacts_threshold, wheels_contacts, frames, chassis_volume,
             chassis_mass, wheels_volume, wheels_mass, cumulative_stall_time:
-            (
+            fitness_scale_function(
                 10 * max_position +  # 10e4
                 1000 * is_winner -  # 10e3
                 50 * num_wheels -  # 10e2
@@ -176,10 +177,14 @@ settings['ga'] = {
                 wheels_mass / 10 -  # 10e2
                 10 * wheels_volume -  # 10e2
                 10 * cumulative_stall_time  # 10e2 (massimo 10e5)
-            ) + 10e5,
+            ),  # + 10e5,
             type(lambda x: x)
         )
 }
+
+
+def fitness_scale_function(x: float) -> float:
+    return math.exp(x) if x <= 0 else (math.pow((x / math.e), (3/4)) + 1)
 
 
 def _verify_constants() -> None:
