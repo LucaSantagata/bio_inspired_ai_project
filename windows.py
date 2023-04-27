@@ -374,6 +374,22 @@ class StatsWindow(QWidget):
         hbox_num_solved.addWidget(self.num_solved_last_gen, 1)
         stats_vbox.addLayout(hbox_num_solved)
 
+        # num cumulative solved last gen
+        num_cum_solved_gen_label = QLabel()
+        num_cum_solved_gen_label.setFont(font_bold)
+        num_cum_solved_gen_label.setText('Cumulative Solved Gen:')
+        num_cum_solved_gen_label.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        self.num_cum_solved_gen = QLabel()
+        self.num_cum_solved_gen.setFont(normal_font)
+        self.num_cum_solved_gen.setText('0')
+        self.num_cum_solved_gen.setAlignment(Qt.AlignLeft | Qt.AlignVCenter)
+        hbox_num_cum_solved = QHBoxLayout()
+        hbox_num_cum_solved.setContentsMargins(5, 0, 0, 0)
+        # Give equal weight
+        hbox_num_cum_solved.addWidget(num_cum_solved_gen_label, 1)
+        hbox_num_cum_solved.addWidget(self.num_cum_solved_gen, 1)
+        stats_vbox.addLayout(hbox_num_cum_solved)
+
         # generations without improvement
         gens_without_improvement_label = QLabel()
         gens_without_improvement_label.setFont(font_bold)

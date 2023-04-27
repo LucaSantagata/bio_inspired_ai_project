@@ -287,6 +287,7 @@ class MainWindow(QMainWindow):
         # run at a time. This flag is for deciding when we are done with that so we can move on to crossover
         # and mutation.
         self._creating_random_cars = True
+        self._all_gen_winners = 0
 
         # Determine how large the next generation is
         if get_ga_constant('selection_type').lower() == 'plus':
@@ -507,7 +508,9 @@ class MainWindow(QMainWindow):
 
     def _set_previous_gen_num_winners(self) -> None:
         winners = sum(ind.is_winner for ind in self.population.individuals)
+        self._all_gen_winners += winners
         self.stats_window.num_solved_last_gen.setText(str(winners))
+        self.stats_window.num_cum_solved_gen.setText(str(self._all_gen_winners))
 
     def _create_num_offspring(self, number_of_offspring) -> List[Individual]:
         """
