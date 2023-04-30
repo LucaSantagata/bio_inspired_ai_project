@@ -121,7 +121,10 @@ settings['boxcar'] = {
 settings['ga'] = {
     "max_generations": (10, int),
 
+    "min_fitness_value": (1e-10, float),
+
     # Selection
+
     # 'num_parents': (60, int),
     # 'num_offspring': (60, int),
     'num_parents': (40, int),

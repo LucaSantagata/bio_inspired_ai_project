@@ -214,6 +214,7 @@ class Car(Individual):
             max(self.max_position, 0.0),
             int(self.is_winner),
             self.num_wheels,
+            get_boxcar_constant("min_num_wheels"),
             get_ga_constant("max_contacts_penalty"),
             get_ga_constant("contacts_threshold"),
             wheels_contacts,
@@ -236,7 +237,7 @@ class Car(Individual):
         print("wheels_mass:", self.wheels_mass)
         print("cumulative_stall_time:", self.cumulative_stall_time)
 
-        self._fitness = max(fitness, 0.0001)
+        self._fitness = max(fitness, get_ga_constant("min_fitness_value"))
 
         print("FITNESS FUNCTION:", fitness)
         
@@ -560,7 +561,7 @@ def smart_clip(chromosome: np.ndarray) -> None:
     Bad things happen when you give a car 0 density...
     """
     np.clip(chromosome[genes['chassis_densities'], :],
-            0.0001,
+            get_ga_constant("min_fitness_value"),
             np.inf,
             out=chromosome[genes['chassis_densities'], :])
 
