@@ -106,6 +106,19 @@ def draw_polygon(painter: QPainter, body: b2Body, poly_type: str = '', adjust_pa
                 hue_ratio = min(max(hue_ratio, 0.0), 1.0)
                 color = QColor.fromHsvF(hue_ratio, 1., .8)
                 painter.setBrush(QBrush(color, Qt.SolidPattern))
+            elif poly_type == 'wheel':
+                adjust = get_boxcar_constant(
+                    'max_wheel_density') - get_boxcar_constant('min_wheel_density')
+                # If the min/max are the same you will get 0 adjust. This is to prevent divide by zero.
+                if adjust == 0.0:
+                    hue_ratio = 0.0
+                else:
+                    hue_ratio = (fixture.density -
+                                 get_boxcar_constant('min_wheel_density')) / adjust
+                # Just in case you leave the GA unbounded...
+                hue_ratio = min(max(hue_ratio, 0.0), 1.0)
+                color = QColor.fromHsvF(hue_ratio, 1., .8)
+                painter.setBrush(QBrush(color, Qt.SolidPattern))
 
             polygon: b2PolygonShape = fixture.shape
             local_points: List[b2Vec2] = polygon.vertices
@@ -199,7 +212,7 @@ class GameWindow(QWidget):
         """
         for wheel in car.wheels:
             if wheel.vertices:
-                draw_polygon(painter, wheel.body, poly_type='chassis')
+                draw_polygon(painter, wheel.body, poly_type='wheel')
             else:
                 draw_circle(painter, wheel.body)
 
