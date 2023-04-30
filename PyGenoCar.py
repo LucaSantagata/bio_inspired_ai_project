@@ -693,8 +693,11 @@ class MainWindow(QMainWindow):
         Called once every 1/FPS to update everything
         """
 
+        if self.current_generation >= get_ga_constant("max_generations"):
+            self.state = States.STOP
+
         if self.state == States.STOP:
-            sys.exit(App.exec_())
+            sys.exit("Max generations reached.")
 
         for car in self.cars:
             if not car.is_alive:
@@ -797,9 +800,6 @@ class MainWindow(QMainWindow):
 
         # Step
         self.world.Step(1./FPS, 10, 6)
-
-        if self.current_generation > get_ga_constant("max_generations"):
-            self.state = States.STOP
 
     def _crossover(self, p1_chromosome: np.ndarray, p2_chromosome: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
         """
