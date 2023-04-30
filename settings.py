@@ -2,6 +2,40 @@ from typing import Any, Tuple
 import numpy as np
 import math
 
+def fitness_function(max_position, num_wheels, total_chassis_volume, total_wheels_volume, frames) -> float:
+    return (
+            (max_position * 3) ** 3.5 -
+            (num_wheels ** 5) -
+            ((total_chassis_volume * 5) ** 3) -
+            ((total_wheels_volume * 10) ** 5) -
+            frames
+    )
+
+def fitness_function2 (
+    max_position, is_winner, num_wheels, min_num_wheels, max_contacts_penalty,
+    contacts_threshold, wheels_contacts, frames, chassis_volume, chassis_mass,
+    wheels_volume, wheels_mass, cumulative_stall_time
+) -> float:
+    return fitness_scale_function(
+        10 * max_position +  # 10e4
+        1000 * is_winner -  # 10e3
+        # 50 * num_wheels -  # 10e2
+        50 * num_wheels if num_wheels > min_num_wheels else 0 -  # 10e2
+        np.sum(
+            [
+                (-max_contacts_penalty/contacts_threshold) * contacts + max_contacts_penalty
+                if contacts <= contacts_threshold else 0
+                for contacts in wheels_contacts
+            ]
+        ) -  # 10e2
+        (1 / (is_winner + 0.10)) * (frames / 100) -  # 10e2
+        chassis_mass -  # 10e2
+        100 * chassis_volume -  # 10e2
+        wheels_mass / 10 -  # 10e2
+        10 * wheels_volume -  # 10e2
+        10 * cumulative_stall_time  # 10e2 (massimo 10e5)
+    )
+
 # Settings that control everything.
 settings = {}
 settings['boxcar'] = {}
@@ -16,8 +50,8 @@ settings['boxcar'] = {
     'gaussian_floor_seed': (0, int),
 
     # MN MODIFIED if the tiles are strange or not
-    'min_num_section_per_tile': (10, int), # MN MODIFIED min number of sections per tile
-    'max_num_section_per_tile': (10, int), # MN MODIFIED max number of sections per tile
+    'min_num_section_per_tile': (1, int), # MN MODIFIED min number of sections per tile
+    'max_num_section_per_tile': (1, int), # MN MODIFIED max number of sections per tile
     
     'floor_creation_type': ('gaussian', str),
     # 'gaussian', 'ramp', 'jagged', 'holes'
@@ -64,7 +98,7 @@ settings['boxcar'] = {
     # Wheel
     'min_wheel_density': (40.0, float),
     'max_wheel_density': (200.0, float),
-    'min_num_wheels': (0, int),
+    'min_num_wheels': (2, int),
     'max_num_wheels': (7, int),
     'min_wheel_radius': (0.1, float),
     'max_wheel_radius': (0.5, float),
@@ -72,9 +106,9 @@ settings['boxcar'] = {
     "min_wheel_vertices_radius": (0.1, float),
     "max_wheel_vertices_radius": (1.3, float),
 
-    "circle_wheel_probability": (0.5, float),
+    "circle_wheel_probability": (0.2, float),
 
-    "min_num_wheels_vertices": (5, int),
+    "min_num_wheels_vertices": (3, int),
     "max_num_wheels_vertices": (10, int),
 
     "round_length_vertices_coordinates": (6, int),
@@ -119,14 +153,11 @@ settings['boxcar'] = {
 
 # Genetic algorithm specific settings
 settings['ga'] = {
-    "max_generations": (10, int),
+    "max_generations": (1, int),
 
     "min_fitness_value": (1e-10, float),
 
     # Selection
-
-    # 'num_parents': (60, int),
-    # 'num_offspring': (60, int),
     'num_parents': (40, int),
     'num_offspring': (40, int),
 
@@ -137,58 +168,26 @@ settings['ga'] = {
     'probability_gaussian': (1.00, float),
     'gaussian_mutation_scale': (0.2, float),
     'probability_random_uniform': (0.00, float),
-    # 'mutation_rate': (0.05, float),
-    'mutation_rate': (1, float),
+    'mutation_rate': (0.2, float),
     'mutation_rate_type': ('static', str),
 
     # Crossover
-    'probability_SBX': (1.00, float),
+    'probability_SBX': (1, float),
     'SBX_eta': (1, float),
     'crossover_selection': ('roulette', str),
-    'tournament_size': (5, int),
+    'tournament_size': (10, int),
 
     "max_contacts_penalty": (50, int),
     "contacts_threshold": (10, int),
 
     # Fitness function
-    'fitness_function': (lambda max_position, num_wheels, total_chassis_volume, total_wheels_volume, frames:
-                         (max_position * 3) ** 3.5 -
-                         (num_wheels ** 5) -
-                         ((total_chassis_volume * 5) ** 3) -
-                         ((total_wheels_volume * 10) ** 5) -
-                         frames,
-                         type(lambda x: x)
-                         ),
-
-    "fitness_function2":
-        (
-            lambda max_position, is_winner, num_wheels, max_contacts_penalty, contacts_threshold, wheels_contacts, frames, chassis_volume,
-            chassis_mass, wheels_volume, wheels_mass, cumulative_stall_time:
-            fitness_scale_function(
-                10 * max_position +  # 10e4
-                1000 * is_winner -  # 10e3
-                50 * num_wheels -  # 10e2
-                np.sum(
-                    [
-                        (-max_contacts_penalty/contacts_threshold) * contacts + max_contacts_penalty
-                        if contacts <= contacts_threshold else 0
-                        for contacts in wheels_contacts
-                    ]
-                ) -  # 10e2
-                (1 / (is_winner + 0.10)) * (frames / 100) -  # 10e2
-                chassis_mass -  # 10e2
-                100 * chassis_volume -  # 10e2
-                wheels_mass / 10 -  # 10e2
-                10 * wheels_volume -  # 10e2
-                10 * cumulative_stall_time  # 10e2 (massimo 10e5)
-            ),  # + 10e5,
-            type(lambda x: x)
-        )
+    "fitness_function": (fitness_function, any),
+    "fitness_function2": (fitness_function2, any)
 }
 
 
 def fitness_scale_function(x: float) -> float:
-    return math.exp(x) if x <= 0 else (math.pow((x / math.e), (3/4)) + 1)
+    return (math.atan(x) + math.pi/2) if x <= 0 else (math.pow(x, (3/4)) + math.pi/2)
 
 
 def _verify_constants() -> None:
@@ -252,3 +251,7 @@ def get_boxcar_constant(constant: str) -> Any:
 
 def get_ga_constant(constant: str) -> Any:
     return _get_constant(constant, 'ga')
+
+
+def get_settings() -> Any:
+    return settings
