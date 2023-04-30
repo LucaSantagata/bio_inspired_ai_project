@@ -86,6 +86,7 @@ settings['boxcar'] = {
     'show': (True, bool),  # Whether or not to display anything
     'fps': (60.0, float),
     'run_at_a_time': (20, int),
+    'should_smooth_camera_to_leader': (False, bool),
 
     "population_headers": (
         "generation," +

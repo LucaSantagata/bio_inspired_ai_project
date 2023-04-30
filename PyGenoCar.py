@@ -180,11 +180,16 @@ class GameWindow(QWidget):
         self._camera_speed = 0.05
         self._camera.x
 
-    def pan_camera_to_leader(self) -> None:
-        diff_x = self._camera.x - self.leader.chassis.position.x
-        diff_y = self._camera.y - self.leader.chassis.position.y
-        self._camera.x -= self._camera_speed * diff_x
-        self._camera.y -= self._camera_speed * diff_y
+    def pan_camera_to_leader(self, should_smooth: bool = False) -> None:
+        if should_smooth:
+            diff_x = self._camera.x - self.leader.chassis.position.x
+            diff_y = self._camera.y - self.leader.chassis.position.y
+            self._camera.x -= self._camera_speed * diff_x
+            self._camera.y -= self._camera_speed * diff_y
+        else:
+            self._camera.x = self.leader.chassis.position.x
+            self._camera.y = self.leader.chassis.position.y
+
 
     def pan_camera_in_direction(self, direction: str, amount: int) -> None:
         diff_x, diff_y = 0, 0
@@ -717,7 +722,7 @@ class MainWindow(QMainWindow):
                         self.game_window.leader = car
         # If the leader is valid, then just pan to the leader
         if not self.manual_control and self.leader:
-            self.game_window.pan_camera_to_leader()
+            self.game_window.pan_camera_to_leader(get_boxcar_constant("should_smooth_camera_to_leader"))
         # If there is not a leader then the generation is over OR the next group of N need to run
         if not self.leader:
             # Replay state
