@@ -1,3 +1,4 @@
+import pandas as pd
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QScrollArea, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QFormLayout
 from PyQt5.QtGui import QPainter, QBrush, QPen, QPolygonF, QColor, QPixmap, QImage
@@ -15,7 +16,7 @@ from genetic_algorithm.individual import Individual
 from genetic_algorithm.crossover import single_point_binary_crossover as SPBX
 from genetic_algorithm.mutation import gaussian_mutation
 from genetic_algorithm.selection import elitism_selection, roulette_wheel_selection, tournament_selection
-from settings import get_boxcar_constant, get_ga_constant
+from settings import get_boxcar_constant, get_ga_constant, get_settings
 import settings
 from windows import SettingsWindow, StatsWindow, draw_border
 import os
@@ -371,10 +372,10 @@ class MainWindow(QMainWindow):
                 if not os.path.exists(path):
                     # raise Exception('{} already exists. This would overwrite everything, choose a different folder or delete it and try again'.format(path))
                     os.makedirs(path)
-                save_population(path, self.file_name, self.population, settings.settings, self.current_generation, self.datetime)
+                save_population(path, self.file_name, self.population, get_settings(), self.current_generation, self.datetime)
             # Save best? 
             if args.save_best:
-                save_car(args.save_best, 'car_{}'.format(self.current_generation), self.population.fittest_individual, settings.settings, self.current_generation, self.datetime)
+                save_car(args.save_best, 'car_{}'.format(self.current_generation), self.population.fittest_individual, get_settings(), self.current_generation, self.datetime)
 
             self._set_previous_gen_avg_fitness()
             self._set_previous_gen_num_winners()
@@ -880,13 +881,13 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         global args
         if args.save_pop_on_close:
-            save_population(args.save_pop_on_close, self.population, settings.settings, self.current_generation, self.datetime)
+            save_population(args.save_pop_on_close, self.file_name, self.population, get_settings(), self.current_generation, self.datetime)
 
     def getVideo(self):
         return self.out
 
 
-def save_population(population_folder: str, file_name: str, population: Population, settings: Dict[str, Any], current_generation: int, datetime: str) -> None:
+def save_population(population_folder: str, file_name: str, population: Population, settings_dict: Dict[str, Any], current_generation: int, datetime: str) -> None:
     """
     Saves all cars in the population
     """
@@ -896,6 +897,13 @@ def save_population(population_folder: str, file_name: str, population: Populati
     # This will not save anything the first generation since those are just random cars and nothing has
     # been added to the population yet.
 
+    settings_fname = os.path.join(population_folder, f'settings_{datetime}.csv')
+    pd.DataFrame(settings_dict).to_csv(settings_fname)
+
+    settings_fname = os.path.join(population_folder, f'settings_{datetime}.pkl')
+    with open(settings_fname, 'wb') as out:
+        pickle.dump(settings_dict, out)
+
     if file_name not in os.listdir(population_folder):
         with open(os.path.join(population_folder, file_name), "w") as population_file:
             population_file.write(get_boxcar_constant("population_headers"))
@@ -903,7 +911,14 @@ def save_population(population_folder: str, file_name: str, population: Populati
     for i, car in enumerate(population.individuals):
         car_name = f'car_gen{current_generation}_id{i}'
         print('saving {} to {}'.format(car_name, population_folder))
-        save_car(population_folder, file_name, car_name, car, settings, current_generation, datetime)
+        save_car(
+            population_folder=population_folder,
+            file_name=file_name,
+            individual_name=car_name,
+            car=car,
+            current_generation=current_generation,
+            datetime=datetime
+        )
 
 
 def parse_args():
