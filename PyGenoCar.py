@@ -521,8 +521,8 @@ class MainWindow(QMainWindow):
     def _set_previous_gen_avg_fitness(self) -> None:
         avg_fitness = sum(
             ind.fitness for ind in self.population.individuals) / len(self.population.individuals)
-        self.stats_window.average_fitness_last_gen.setText(
-            '{:.2f}'.format(avg_fitness))
+        # self.stats_window.average_fitness_last_gen.setText('{:.5f}'.format(avg_fitness))
+        self.stats_window.average_fitness_last_gen.setText(str(avg_fitness))
 
     def _set_previous_gen_num_winners(self) -> None:
         winners = sum(ind.is_winner for ind in self.population.individuals)
@@ -686,7 +686,7 @@ class MainWindow(QMainWindow):
         """
         Sets the max fitness label
         """
-        self.stats_window.best_fitness.setText(str(int(self.max_fitness)))
+        self.stats_window.best_fitness.setText(str(self.max_fitness))
 
     def _update(self) -> None:
         """
