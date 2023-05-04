@@ -246,8 +246,10 @@ def _get_constant(constant: str, controller: str) -> Any:
     __settings_cache[(constant, controller)] = value
     return value
 
+
 def get_window_constant(constant: str) -> Any:
     return _get_constant(constant, 'window')
+
 
 def get_boxcar_constant(constant: str) -> Any:
     return _get_constant(constant, 'boxcar')
@@ -255,3 +257,13 @@ def get_boxcar_constant(constant: str) -> Any:
 
 def get_ga_constant(constant: str) -> Any:
     return _get_constant(constant, 'ga')
+
+
+def set_ga_constant(constant: str, value: Any) -> None:
+    settings['ga'][constant] = value
+    __settings_cache[(constant, 'ga')] = value
+
+
+def set_boxcar_constant(constant: str, value: Any) -> None:
+    settings['boxcar'][constant] = value
+    __settings_cache[(constant, 'boxcar')] = value
