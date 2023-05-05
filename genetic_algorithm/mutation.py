@@ -5,12 +5,12 @@ from .individual import Individual
 from settings import get_boxcar_constant, get_ga_constant
 from encode_decode_chromosome_vertices import pol2b2Vec2, wheels_vertices_pol_to_wheels_vertices, rs_thetas_encoding, rs_thetas_to_string, string_to_rs_thetas
 
-min_wheel_vertices_radius = get_boxcar_constant("min_wheel_vertices_radius")
-max_wheel_vertices_radius = get_boxcar_constant("max_wheel_vertices_radius")
-max_num_wheels_vertices = get_boxcar_constant("max_num_wheels_vertices")
+# min_wheel_vertices_radius = get_boxcar_constant("min_wheel_vertices_radius")
+# max_wheel_vertices_radius = get_boxcar_constant("max_wheel_vertices_radius")
+# max_num_wheels_vertices = get_boxcar_constant("max_num_wheels_vertices")
 
 
-def mutate_vertex(r: float, theta: int, prob_mutation: float) -> tuple:
+def mutate_vertex(r: float, theta: int, prob_mutation: float, max_num_wheels_vertices: int, min_wheel_vertices_radius: float, max_wheel_vertices_radius: float) -> tuple:
     if np.random.random() <= prob_mutation:
         r += (
                 (np.random.random() * (max_wheel_vertices_radius - min_wheel_vertices_radius)) + min_wheel_vertices_radius
@@ -30,7 +30,15 @@ def decode_encode_mutate_vertices(chromosome_vertices: np.ndarray, prob_mutation
     for i, (wheel_rs_str, wheel_thetas_str) in enumerate(zip(wheels_rs_gene, wheels_thetas_gene)):
         if wheel_rs_str and wheel_thetas_str:
             rs, thetas = string_to_rs_thetas(wheel_rs_str, wheel_thetas_str)
-            wheels_rs_thetas.append([mutate_vertex(r, theta, prob_mutation) for (r, theta) in zip(rs, thetas)])
+            wheels_rs_thetas.append([
+                mutate_vertex(
+                    r,
+                    theta,
+                    prob_mutation,
+                    max_num_wheels_vertices=get_boxcar_constant("max_num_wheels_vertices"),
+                    min_wheel_vertices_radius=get_boxcar_constant("min_wheel_vertices_radius"),
+                    max_wheel_vertices_radius = get_boxcar_constant("max_wheel_vertices_radius")
+                ) for (r, theta) in zip(rs, thetas)])
         else:
             wheels_rs_thetas.append(None)
 

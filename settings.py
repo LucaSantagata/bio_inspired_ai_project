@@ -1,6 +1,8 @@
+import os
 from typing import Any, Tuple
 import numpy as np
 import math
+
 
 def fitness_function(max_position, num_wheels, total_chassis_volume, total_wheels_volume, frames) -> float:
     return (
@@ -10,6 +12,7 @@ def fitness_function(max_position, num_wheels, total_chassis_volume, total_wheel
             ((total_wheels_volume * 10) ** 5) -
             frames
     )
+
 
 def fitness_function2 (
     max_position, is_winner, num_wheels, min_num_wheels, max_contacts_penalty,
@@ -35,6 +38,7 @@ def fitness_function2 (
         10 * wheels_volume -  # 10e2
         10 * cumulative_stall_time  # 10e2 (massimo 10e5)
     )
+
 
 # Settings that control everything.
 settings = {}
@@ -255,3 +259,15 @@ def get_ga_constant(constant: str) -> Any:
 
 def get_settings() -> Any:
     return settings
+
+
+def update_settings_value(controller: str, constant: str, new_value: tuple, frame: int, dir: str, file_name:str):
+    if file_name not in os.listdir(dir):
+        with open(os.path.join(dir, file_name), "w") as f:
+            f.write("frame,controller,constant,old_value,new_value\n")
+
+    with open(os.path.join(dir, file_name), "a") as f:
+        f.write(f"{frame},{controller},{constant},{settings[controller][constant]},{new_value}\n")
+
+    settings[controller][constant] = new_value
+    __settings_cache[(constant, controller)] = new_value[0]

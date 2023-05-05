@@ -319,7 +319,7 @@ class MainWindow(QMainWindow):
 
         if self.replay:
             global args
-            self.floor = Floor(self.world)
+            self.floor = Floor(self.world, seed=get_boxcar_constant('gaussian_floor_seed'), num_tiles=get_boxcar_constant('max_floor_tiles'))
             self.state = States.REPLAY
             self.num_replay_inds = len([x for x in os.listdir(
                 args.replay_from_folder) if x.startswith('car_')])
@@ -637,7 +637,7 @@ class MainWindow(QMainWindow):
         """
         # Create the floor if FIRST_GEN, but not if it's in progress
         if self.state == States.FIRST_GEN:
-            self.floor = Floor(self.world)
+            self.floor = Floor(self.world, seed=get_boxcar_constant('gaussian_floor_seed'), num_tiles=get_boxcar_constant('max_floor_tiles'))
 
         # We are now in progress of creating the first gen
         self.state = States.FIRST_GEN_IN_PROGRESS
