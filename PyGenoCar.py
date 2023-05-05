@@ -10,13 +10,13 @@ from enum import Enum, unique
 from Box2D import *
 import random
 from boxcar.floor import Floor
-from boxcar.car import Car, create_random_car, save_car, load_car, smart_clip
+from boxcar.car import Car, create_random_car, save_car, load_car, load_cars, smart_clip
 from genetic_algorithm.population import Population
 from genetic_algorithm.individual import Individual
 from genetic_algorithm.crossover import single_point_binary_crossover as SPBX
 from genetic_algorithm.mutation import gaussian_mutation
 from genetic_algorithm.selection import elitism_selection, roulette_wheel_selection, tournament_selection
-from settings import get_boxcar_constant, get_ga_constant, get_settings
+from settings import get_boxcar_constant, get_ga_constant, get_settings, update_settings_value
 import settings
 from windows import SettingsWindow, StatsWindow, draw_border
 import os
@@ -264,9 +264,9 @@ class GameWindow(QWidget):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, world, path, replay=False):
+    def __init__(self, world, path, _datetime, replay=False):
         super().__init__()
-        self.datetime = (datetime.now()).strftime("%Y%m%d_%H%M")
+        self.datetime = _datetime
         self.file_name = self.datetime + ".csv"
 
         self.world = world
@@ -321,8 +321,9 @@ class MainWindow(QMainWindow):
             global args
             self.floor = Floor(self.world, seed=get_boxcar_constant('gaussian_floor_seed'), num_tiles=get_boxcar_constant('max_floor_tiles'))
             self.state = States.REPLAY
-            self.num_replay_inds = len([x for x in os.listdir(
-                args.replay_from_folder) if x.startswith('car_')])
+
+            # self.num_replay_inds = len([x for x in os.listdir(args.replay_from_folder) if x.startswith('car_')])
+            self.num_replay_inds = 1
         else:
             self._set_first_gen()
         # self.population = Population(self.cars)
@@ -693,7 +694,7 @@ class MainWindow(QMainWindow):
         Called once every 1/FPS to update everything
         """
 
-        if self.current_generation >= get_ga_constant("max_generations"):
+        if not self.state == States.REPLAY and self.current_generation >= get_ga_constant("max_generations"):
             self.state = States.STOP
 
         if self.state == States.STOP:
@@ -724,6 +725,27 @@ class MainWindow(QMainWindow):
                     if car_pos > self.leader.position.x:
                         self.leader = car
                         self.game_window.leader = car
+
+        if not np.any(np.array([car.is_alive for car in self.cars])):
+            if self.state == States.REPLAY and self.current_generation > 0:
+                # Should we save the pop
+                if args.test_from_filename:
+                    self.population.individuals = self.cars
+
+                    # Calculate fit
+                    for individual in self.population.individuals:
+                        individual.calculate_fitness()
+
+                    path = "/".join(args.test_from_filename.split('/')[0:-1])
+
+                    if not os.path.exists(path):
+                        # raise Exception('{} already exists. This would overwrite everything, choose a different folder or delete it and try again'.format(path))
+                        os.makedirs(path)
+                    save_population(path, self.file_name, self.population, get_settings(), self.current_generation, self.datetime)
+
+                self.state = States.STOP
+                return
+
         # If the leader is valid, then just pan to the leader
         if not self.manual_control and self.leader:
             self.game_window.pan_camera_to_leader(get_boxcar_constant("should_smooth_camera_to_leader"))
@@ -731,16 +753,21 @@ class MainWindow(QMainWindow):
         if not self.leader:
             # Replay state
             if self.state == States.REPLAY:
-                name = 'car_{}.npy'.format(self.current_generation)
-                car = load_car(self.world, self.floor.winning_tile,
-                               self.floor.lowest_y, np.inf, args.replay_from_folder, name)
-                self.cars = [car]
+                print("REPLAY")
+                cars = load_cars(
+                    self.world,
+                    self.floor.winning_tile,
+                    self.floor.lowest_y,
+                    np.inf,
+                    args.replay_from_filename if args.replay_from_filename else args.test_from_filename
+                )
+
+                self.cars = cars
                 self.game_window.cars = self.cars
                 self.leader = self.find_new_leader()
                 self.game_window.leader = self.leader
                 self.current_generation += 1
-                txt = 'Replay {}/{}'.format(self.current_generation,
-                                            self.num_replay_inds)
+                txt = 'Replay {}/{}'.format(self.current_generation, self.num_replay_inds)
                 self.stats_window.generation.setText(
                     "<font color='red'>Replay</font>")
                 self.stats_window.pop_size.setText(
@@ -936,8 +963,14 @@ def parse_args():
                         type=str, help='name of video to save')
 
     # Replay @NOTE: Only supports replaying the best individual. Not a list of populations.
-    parser.add_argument('--replay-from-folder', dest='replay_from_folder',
-                        type=str, help='destination to replay individuals from')
+    # parser.add_argument('--replay-from-folder', dest='replay_from_folder',
+    #                     type=str, help='destination to replay individuals from')
+
+    parser.add_argument('--replay-from-filename', dest='replay_from_filename',
+                        type=str, help='destination to replay run from')
+
+    parser.add_argument('--test-from-filename', dest='test_from_filename',
+                        type=str, help='destination to test run from')
 
     args = parser.parse_args()
     return args
@@ -953,17 +986,39 @@ if __name__ == "__main__":
     args = parse_args()
     replay = False
 
-    if args.replay_from_folder:
-        if 'settings.pkl' not in os.listdir(args.replay_from_folder):
-            raise Exception('settings.pkl not found within {}'.format(
-                args.replay_from_folder))
-        settings_path = os.path.join(args.replay_from_folder, 'settings.pkl')
-        with open(settings_path, 'rb') as f:
+    _datetime = (datetime.now()).strftime("%Y%m%d_%H%M")
+
+    # if args.replay_from_folder:
+    #     if 'settings.pkl' not in os.listdir(args.replay_from_folder):
+    #         raise Exception('settings.pkl not found within {}'.format(
+    #             args.replay_from_folder))
+    #     settings_path = os.path.join(args.replay_from_folder, 'settings.pkl')
+    #     with open(settings_path, 'rb') as f:
+    #         settings.settings = pickle.load(f)
+    #     replay = True
+
+    if args.replay_from_filename or args.test_from_filename:
+        filename = args.replay_from_filename if args.replay_from_filename else args.test_from_filename
+        name = filename.split('/')
+        replay_settings_fname = os.path.join("/".join(name[0:-1]), "settings_" + name[-1].split('.')[0] + ".pkl")
+
+        with open(replay_settings_fname, "rb") as f:
             settings.settings = pickle.load(f)
         replay = True
 
+        if args.test_from_filename:
+            _datetime = "test_" + name[-1].split('.')[0]
+            settings.update_settings_value(
+                "boxcar",
+                "gaussian_floor_seed",
+                (random.randint(1, 100), int),
+                -1,
+                "/".join(name[0:-1]),
+                "settings_update_" + name[-1].split('.')[0] + ".csv"
+            )
+
     if args.save_video:
-        output_file = "video_" + datetime.now().strftime("%d%m%Y_%H%M") + ".mp4"
+        output_file = "video_" + _datetime + ".mp4"
         output_path = os.path.join(args.save_video, output_file)
         if not os.path.exists(args.save_video):
             # raise Exception('{} already exists. This would overwrite everything, choose a different folder or delete it and try again'.format(path))
@@ -973,7 +1028,7 @@ if __name__ == "__main__":
 
     world = b2World(get_boxcar_constant('gravity'))
     App = QApplication(sys.argv)
-    window = MainWindow(world, output_path, replay)
+    window = MainWindow(world, output_path, _datetime, replay)
 
     if args.save_video:
         App.exec_()
