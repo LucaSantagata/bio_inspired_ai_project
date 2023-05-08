@@ -125,6 +125,7 @@ settings['boxcar'] = {
     'fps': (60.0, float),
     'run_at_a_time': (20, int),
     'should_smooth_camera_to_leader': (False, bool),
+    'show_label': (True, bool), # MN MODIFIED show label of the car or not
 
     "population_headers": (
         "generation," +

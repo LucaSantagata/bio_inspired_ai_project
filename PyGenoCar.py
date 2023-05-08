@@ -1,8 +1,8 @@
 import pandas as pd
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QScrollArea, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QFormLayout
-from PyQt5.QtGui import QPainter, QBrush, QPen, QPolygonF, QColor, QPixmap, QImage
-from PyQt5.QtCore import Qt, QPointF, QTimer, QRect
+from PyQt5.QtGui import QPainter, QBrush, QPen, QPolygonF, QColor, QPixmap, QImage, QFont, QFontMetricsF
+from PyQt5.QtCore import Qt, QPointF, QTimer, QRect, QRectF
 from typing import Optional, Tuple, List, Dict, Any
 import argparse
 import dill as pickle
@@ -144,16 +144,41 @@ def draw_polygon(painter: QPainter, body: b2Body, poly_type: str = '', adjust_pa
             if poly:
                 painter.drawPolygon(QPolygonF(poly))
 
+def draw_label(painter: QPainter, car: Car, adjust_painter: bool = True)-> None:
+    """
+    Draws a label on top of the car
+    """
+    if car.is_alive:
+        if adjust_painter:
+            _set_painter_clear(painter, Qt.black, scale=7)
 
-def _set_painter_solid(painter: QPainter, color: Qt.GlobalColor, with_antialiasing: bool = True):
-    _set_painter(painter, color, True, with_antialiasing)
+        font = QFont('Arial', 1, QFont.Light)
+        text_scale = 10
+        painter.scale(-1/text_scale, 1/text_scale)
+        painter.setFont(font)
+        label_text = str(car.id)
+        # get the bounding rectangle of the text
+        fm = QFontMetricsF(font)
+        text_width = fm.width(label_text)
+        text_height = fm.height()
+        # adjust the rectangle size to fit the text
+        offset = 1
+        label_rect = QRectF(car.chassis.worldCenter[0] * text_scale - 4, car.chassis.worldCenter[1] * (-text_scale) - 15,  text_width + offset, text_height + 2*offset)
+        painter.rotate(180)
+        painter.drawText(label_rect, Qt.AlignCenter, label_text)
+        painter.drawRect(label_rect)
+        painter.rotate(-180)
+        painter.scale(-1*text_scale, 1*text_scale)
+
+def _set_painter_solid(painter: QPainter, color: Qt.GlobalColor, with_antialiasing: bool = True, scale: int = scale):
+    _set_painter(painter, color, True, with_antialiasing, scale)
 
 
-def _set_painter_clear(painter: QPainter, color: Qt.GlobalColor, with_antialiasing: bool = True):
-    _set_painter(painter, color, False, with_antialiasing)
+def _set_painter_clear(painter: QPainter, color: Qt.GlobalColor, with_antialiasing: bool = True, scale: int = scale):
+    _set_painter(painter, color, False, with_antialiasing, scale)
 
 
-def _set_painter(painter: QPainter, color: Qt.GlobalColor, fill: bool, with_antialiasing: bool = True):
+def _set_painter(painter: QPainter, color: Qt.GlobalColor, fill: bool, with_antialiasing: bool = True, scale: int = scale):
     painter.setPen(QPen(color, 1./scale, Qt.SolidLine))
     pattern = Qt.SolidPattern if fill else Qt.NoBrush
     painter.setBrush(QBrush(color, pattern))
@@ -223,6 +248,10 @@ class GameWindow(QWidget):
                 draw_circle(painter, wheel.body)
 
         draw_polygon(painter, car.chassis, poly_type='chassis')
+
+        if get_boxcar_constant('show_label'):
+            # draw the label of the car
+            draw_label(painter, car)
 
     def _draw_floor(self, painter: QPainter):
         # @TODO: Make this more efficient. Only need to draw things that are currently on the screen or about to be on screen
@@ -307,6 +336,8 @@ class MainWindow(QMainWindow):
         # and mutation.
         self._creating_random_cars = True
 
+        self.num_car_generated = 0
+    
         # Determine how large the next generation is
         if get_ga_constant('selection_type').lower() == 'plus':
             self._next_gen_size = get_ga_constant(
@@ -427,6 +458,15 @@ class MainWindow(QMainWindow):
         # Set the next pop
         # random.shuffle(next_pop)
         # self.population.individuals = next_pop
+
+    def get_id(self):
+        """
+        Sets the id of the car based on the current generation and the number of cars generated
+        """
+        # id_text = f'Gen_{self.current_generation+1}_id_{self.num_car_generated}'
+        id_text = f'{self.current_generation+1}_{self.num_car_generated}' # second way to set id, which is maybe cleaner
+        self.num_car_generated += 1
+        return id_text
 
     def init_window(self):
         self.centralWidget = QWidget(self)
@@ -567,7 +607,7 @@ class MainWindow(QMainWindow):
                               wheel_radii, wheel_densities, wheels_vertices_pol,
                               chassis_vertices, chassis_densities,                    # Chassis
                               winning_tile, lowest_y_pos,
-                              lifespan)
+                              lifespan, self.get_id())
                     next_pop.append(car)
                     # Check to see if we've added enough parents. The reason we check here is if you requet 5 parents but
                     # 2/5 are dead, then you need to keep going until you get 3 good ones.
@@ -613,9 +653,9 @@ class MainWindow(QMainWindow):
 
                 # Create children from the new chromosomes
                 c1 = Car.create_car_from_chromosome(
-                    p1.world, p1.winning_tile, p1.lowest_y_pos, get_ga_constant('lifespan'), c1_chromosome)
+                    p1.world, p1.winning_tile, p1.lowest_y_pos, get_ga_constant('lifespan'), c1_chromosome, self.get_id())
                 c2 = Car.create_car_from_chromosome(
-                    p2.world, p2.winning_tile, p2.lowest_y_pos, get_ga_constant('lifespan'), c2_chromosome)
+                    p2.world, p2.winning_tile, p2.lowest_y_pos, get_ga_constant('lifespan'), c2_chromosome, self.get_id())
 
                 # Add children to the next generation
                 next_pop.extend([c1, c2])
@@ -656,8 +696,9 @@ class MainWindow(QMainWindow):
         # @NOTE that I create the subset of cars
         for i in range(num_to_create):
             car = create_random_car(
-                self.world, self.floor.winning_tile, self.floor.lowest_y)
+                self.world, self.floor.winning_tile, self.floor.lowest_y, self.get_id())
             self.cars.append(car)
+            
 
         # Add the cars to the next_pop which is used by population
         self._next_pop.extend(self.cars)
