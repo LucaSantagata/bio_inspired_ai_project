@@ -9,7 +9,6 @@ from .wheel import *
 from genetic_algorithm.individual import Individual
 from typing import List, Optional, Union, Dict, Any
 import math
-import dill as pickle
 import os
 from encode_decode_chromosome_vertices import pol2b2Vec2, wheels_vertices_pol_to_wheels_vertices, rs_thetas_encoding, rs_thetas_to_string, string_to_rs_thetas
 
@@ -29,11 +28,16 @@ genes = {
 
 class Car(Individual):
     def __init__(self, world: b2World, 
-                 wheel_radii: List[float], wheel_densities: List[float], wheels_vertices_pol: List[tuple],  # wheel_motor_speeds: List[float],
-                 chassis_vertices: List[b2Vec2], chassis_densities: List[float],
-                 winning_tile: b2Vec2, lowest_y_pos: float, 
-                 lifespan: Union[int, float], id: str, from_chromosome: bool = False) -> None:
-                 
+                 wheel_radii: List[float],
+                 wheel_densities: List[float],
+                 wheels_vertices_pol: List[tuple],  # wheel_motor_speeds: List[float],
+                 chassis_vertices: List[b2Vec2],
+                 chassis_densities: List[float],
+                 winning_tile: b2Vec2,
+                 lowest_y_pos: float,
+                 lifespan: Union[int, float],
+                 id: str,
+                 from_chromosome: bool = False) -> None:
         self.id = id
 
         self.world = world
@@ -180,10 +184,18 @@ class Car(Individual):
         This helps a lot in memory management for Box2D and performance.
         2. You can replay from chromosomes you save.
         """
-        car = Car(world, 
-                  None, None, None,  # None,  # Wheel stuff set to None
-                  None, None,        # Chassis stuff set to None
-                  winning_tile, lowest_y_pos, lifespan, id, from_chromosome=True)
+        car = Car(world,  # world
+                  None,  # wheel_radii
+                  None,  # wheel_densities
+                  None,  # wheels_vertices_pol
+                  # None,  # wheel_motor_speeds  # Wheel stuff set to None
+                  None,  # chassis_vertices
+                  None,  # chassis_densities       # Chassis stuff set to None
+                  winning_tile,
+                  lowest_y_pos,
+                  lifespan,
+                  id,
+                  from_chromosome=True)
         car._chromosome = np.copy(chromosome)
         car.decode_chromosome()
         return car
@@ -194,7 +206,7 @@ class Car(Individual):
         """
 
         # TODO calc contacts of each wheel and add to fitness
-        print(f"CAR's WHEELS ({self.num_wheels}, {self._wheel_attachment_vertices}):", self.ordered_wheels)
+        # print(f"CAR's WHEELS ({self.num_wheels}, {self._wheel_attachment_vertices}):", self.ordered_wheels)
         #
         # print("Wheel[0] contacts:", self.wheels[0].body.__getattribute__("contacts"))
 
@@ -203,9 +215,9 @@ class Car(Individual):
         #     if wheel:
         #         print(f"Wheel[{i}] touched {wheel.contacts} times")
 
-        print(wheels_contacts)
+        # print(wheels_contacts)
 
-        print("///" * 8)
+        # print("///" * 8)
         # func = get_ga_constant('fitness_function')
         # fitness = func(max(self.max_position, 0.0),
         #                self.num_wheels,
@@ -230,20 +242,20 @@ class Car(Individual):
             self.cumulative_stall_time
         )
 
-        print("max_position:", self.max_position)
-        print("is_winner:", self.is_winner)
-        print("num_wheels:", self.num_wheels)
-        print("wheels_contacts:", wheels_contacts)
-        print("frames:", self.frames)
-        print("chassis_volume:", self.chassis_volume)
-        print("chassis_mass:", self.chassis_mass)
-        print("wheels_volume:", self.wheels_volume)
-        print("wheels_mass:", self.wheels_mass)
-        print("cumulative_stall_time:", self.cumulative_stall_time)
+        # print("max_position:", self.max_position)
+        # print("is_winner:", self.is_winner)
+        # print("num_wheels:", self.num_wheels)
+        # print("wheels_contacts:", wheels_contacts)
+        # print("frames:", self.frames)
+        # print("chassis_volume:", self.chassis_volume)
+        # print("chassis_mass:", self.chassis_mass)
+        # print("wheels_volume:", self.wheels_volume)
+        # print("wheels_mass:", self.wheels_mass)
+        # print("cumulative_stall_time:", self.cumulative_stall_time)
 
         self._fitness = max(fitness, get_ga_constant("min_fitness_value"))
 
-        print("FITNESS FUNCTION:", fitness)
+        # print("FITNESS FUNCTION:", fitness)
         
     @property
     def fitness(self) -> float:
@@ -570,7 +582,7 @@ def smart_clip(chromosome: np.ndarray) -> None:
             out=chromosome[genes['chassis_densities'], :])
 
 
-def save_car(population_folder: str, file_name: str, individual_name: str, car: Individual, current_generation: int, datetime: str) -> None:
+def save_car(population_folder: str, file_name: str, car: Individual, current_generation: int, datetime: str) -> None:
     """
     Save a car. This saves one and sometimes two things:
     1. Saves the chromosome representation of the individual
@@ -584,6 +596,7 @@ def save_car(population_folder: str, file_name: str, individual_name: str, car: 
     with open(fname, "a") as file:
         file.write(
             str(current_generation) + "," +
+            str(car.id) + "," +
             str(car.fitness) + "," +
             str(car.max_position) + "," +
             str(car.chassis_mass) + "," +
@@ -611,19 +624,23 @@ def load_car(world: b2World,
 def load_cars(world: b2World,
              winning_tile: b2Vec2, lowest_y: float,
              lifespan: Union[int, float],
-             population_csv: str) -> Car:
+             population_csv: str) -> List[Car]:
     """
     Loads the cars from a csv. This loads the chromosomes.
     """
-    df = pd.read_csv(population_csv).groupby("generation").max()
+    # df = pd.read_csv(population_csv).groupby("generation").max()
+    df = pd.read_csv(population_csv)
+    df = df.loc[df.groupby('generation')['fitness'].idxmax()]
     genes_list = list(genes.keys())
 
     df_cars_chromosomes = df[[col for col in df.columns for gene in genes_list if gene in col]]
+    df_cars_chromosomes["id"] = df["id"]
 
     cars = []
     for i, row in df_cars_chromosomes.iterrows():
 
         chromosome = np.empty((len(genes), 8), dtype=object)
+        id = row["id"]
         for j, gene in enumerate(genes_list):
             chromosome[j] = np.array(
                 list(row[[col for col in df.columns if gene in col]])
@@ -635,7 +652,8 @@ def load_cars(world: b2World,
                 winning_tile,
                 lowest_y,
                 lifespan,
-                chromosome
+                chromosome,
+                id
             )
         )
 

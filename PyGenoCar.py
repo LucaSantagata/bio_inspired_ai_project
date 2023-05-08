@@ -46,10 +46,14 @@ class States(Enum):
     STOP = 7
 
 
-def draw_circle(painter: QPainter, body: b2Body, local=False) -> None:
+def draw_circle(painter: QPainter, body: b2Body, local: bool = False, adjust_painter: bool = True) -> None:
     """
     Draws a circle with the given painter.
     """
+
+    if adjust_painter:
+        _set_painter_clear(painter, Qt.black)
+
     for fixture in body.fixtures:
         if isinstance(fixture.shape, b2CircleShape):
             # Set the color of the circle to be based off wheel density
@@ -144,7 +148,8 @@ def draw_polygon(painter: QPainter, body: b2Body, poly_type: str = '', adjust_pa
             if poly:
                 painter.drawPolygon(QPolygonF(poly))
 
-def draw_label(painter: QPainter, car: Car, adjust_painter: bool = True)-> None:
+
+def draw_label(painter: QPainter, car: Car, adjust_painter: bool = True) -> None:
     """
     Draws a label on top of the car
     """
@@ -169,6 +174,7 @@ def draw_label(painter: QPainter, car: Car, adjust_painter: bool = True)-> None:
         painter.drawRect(label_rect)
         painter.rotate(-180)
         painter.scale(-1*text_scale, 1*text_scale)
+
 
 def _set_painter_solid(painter: QPainter, color: Qt.GlobalColor, with_antialiasing: bool = True, scale: int = scale):
     _set_painter(painter, color, True, with_antialiasing, scale)
@@ -725,8 +731,8 @@ class MainWindow(QMainWindow):
             text = '{}/{} (batch {}/{})'.format(self.num_cars_alive,
                                                 self.batch_size, self.current_batch, num_batches)
         else:
-            text = f"{'Replay' if args.replay_from_filename else 'Testing'} {np.count_nonzero(np.array([car.is_alive for car in self.cars]))}/{len(self.cars)}"
-        self.stats_window.current_num_alive.setText("<font color='red'>" + text + '</font>')
+            text = f"<font color='red'>{'Replay' if args.replay_from_filename else 'Testing'} {np.count_nonzero(np.array([car.is_alive for car in self.cars]))}/{len(self.cars)}</font>"
+        self.stats_window.current_num_alive.setText(text)
 
     def _set_max_fitness(self) -> None:
         """
@@ -979,12 +985,11 @@ def save_population(population_folder: str, file_name: str, population: Populati
             population_file.write(get_boxcar_constant("population_headers"))
 
     for i, car in enumerate(population.individuals):
-        car_name = f'car_gen{current_generation}_id{i}'
+        car_name = f'car_{car.id}'
         print('saving {} to {}'.format(car_name, population_folder))
         save_car(
             population_folder=population_folder,
             file_name=file_name,
-            individual_name=car_name,
             car=car,
             current_generation=current_generation,
             datetime=datetime
