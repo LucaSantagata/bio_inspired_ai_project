@@ -674,14 +674,18 @@ class MainWindow(QMainWindow):
         """
         Set the number of cars alive on the screen label
         """
-        total_for_gen = get_ga_constant('num_parents')
-        if self.current_generation > 0:
-            total_for_gen = self._next_gen_size
-        num_batches = math.ceil(
-            total_for_gen / get_boxcar_constant('run_at_a_time'))
-        text = '{}/{} (batch {}/{})'.format(self.num_cars_alive,
-                                            self.batch_size, self.current_batch, num_batches)
-        self.stats_window.current_num_alive.setText(text)
+
+        if self.state != States.REPLAY:
+            total_for_gen = get_ga_constant('num_parents')
+            if self.current_generation > 0:
+                total_for_gen = self._next_gen_size
+            num_batches = math.ceil(
+                total_for_gen / get_boxcar_constant('run_at_a_time'))
+            text = '{}/{} (batch {}/{})'.format(self.num_cars_alive,
+                                                self.batch_size, self.current_batch, num_batches)
+        else:
+            text = f"{'Replay' if args.replay_from_filename else 'Testing'} {np.count_nonzero(np.array([car.is_alive for car in self.cars]))}/{len(self.cars)}"
+        self.stats_window.current_num_alive.setText("<font color='red'>" + text + '</font>')
 
     def _set_max_fitness(self) -> None:
         """
@@ -767,13 +771,11 @@ class MainWindow(QMainWindow):
                 self.leader = self.find_new_leader()
                 self.game_window.leader = self.leader
                 self.current_generation += 1
-                txt = 'Replay {}/{}'.format(self.current_generation, self.num_replay_inds)
-                self.stats_window.generation.setText(
-                    "<font color='red'>Replay</font>")
-                self.stats_window.pop_size.setText(
-                    "<font color='red'>Replay</font>")
-                self.stats_window.current_num_alive.setText(
-                    "<font color='red'>" + txt + '</font>')
+                # txt = 'Replay {}/{}'.format(self.current_generation, self.num_replay_inds)
+                self.stats_window.generation.setText(f"<font color='red'>{'Replay' if args.replay_from_filename else 'Testing'}</font>")
+                self.stats_window.pop_size.setText(f"<font color='red'>{'Replay' if args.replay_from_filename else 'Testing'}</font>")
+
+                self._set_number_of_cars_alive()
                 return
             # Are we still in the process of just random creation?
             if self.state in (States.FIRST_GEN, States.FIRST_GEN_IN_PROGRESS):
