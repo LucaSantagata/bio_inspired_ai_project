@@ -1,3 +1,4 @@
+import pandas as pd
 from Box2D import *
 import numpy as np
 from typing import List, Union
@@ -297,7 +298,7 @@ class Car(Individual):
         self.wheels_vertices_pol = [None for _ in range(8)]
 
         for idx, (wheel_vertices_r, wheel_vertices_theta) in enumerate(zip(*self._chromosome[(genes['wheels_vertices_r'], genes['wheels_vertices_theta']), :])):
-            if wheel_vertices_r and wheel_vertices_theta:
+            if (wheel_vertices_r and wheel_vertices_theta) and (wheel_vertices_r != "None" and wheel_vertices_theta != "None"):
                 wheel_vertices_r, wheel_vertices_theta = string_to_rs_thetas(wheel_vertices_r, wheel_vertices_theta)
                 self.wheels_vertices_pol[idx] = [(r, theta) for (r, theta) in zip(wheel_vertices_r, wheel_vertices_theta)]
 
@@ -602,3 +603,37 @@ def load_car(world: b2World,
     chromosome = np.load(os.path.join(population_folder, individual_name))
     car = Car.create_car_from_chromosome(world, winning_tile, lowest_y, lifespan, chromosome)
     return car
+
+
+def load_cars(world: b2World,
+             winning_tile: b2Vec2, lowest_y: float,
+             lifespan: Union[int, float],
+             population_csv: str) -> Car:
+    """
+    Loads the cars from a csv. This loads the chromosomes.
+    """
+    df = pd.read_csv(population_csv).groupby("generation").max()
+    genes_list = list(genes.keys())
+
+    df_cars_chromosomes = df[[col for col in df.columns for gene in genes_list if gene in col]]
+
+    cars = []
+    for i, row in df_cars_chromosomes.iterrows():
+
+        chromosome = np.empty((len(genes), 8), dtype=object)
+        for j, gene in enumerate(genes_list):
+            chromosome[j] = np.array(
+                list(row[[col for col in df.columns if gene in col]])
+            )
+
+        cars.append(
+            Car.create_car_from_chromosome(
+                world,
+                winning_tile,
+                lowest_y,
+                lifespan,
+                chromosome
+            )
+        )
+
+    return cars
