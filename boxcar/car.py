@@ -31,7 +31,10 @@ class Car(Individual):
                  wheel_radii: List[float], wheel_densities: List[float], wheels_vertices_pol: List[tuple],  # wheel_motor_speeds: List[float],
                  chassis_vertices: List[b2Vec2], chassis_densities: List[float],
                  winning_tile: b2Vec2, lowest_y_pos: float, 
-                 lifespan: Union[int, float], from_chromosome: bool = False) -> None:
+                 lifespan: Union[int, float], id: str, from_chromosome: bool = False) -> None:
+                 
+        self.id = id
+
         self.world = world
         self.wheel_radii = wheel_radii
         self.wheel_densities = wheel_densities
@@ -169,7 +172,7 @@ class Car(Individual):
 
     @classmethod
     def create_car_from_chromosome(cls, world: b2World, winning_tile: b2Vec2, lowest_y_pos: float,
-                                   lifespan: Union[int, float], chromosome: np.ndarray) -> 'Car':
+                                   lifespan: Union[int, float], chromosome: np.ndarray, id: str) -> 'Car':
         """
         Creates a car from a chromosome. This is helpful in two areas:
         1. You can just keep a bunch of chromosome references and create a car when you need.
@@ -179,7 +182,7 @@ class Car(Individual):
         car = Car(world, 
                   None, None, None,  # None,  # Wheel stuff set to None
                   None, None,        # Chassis stuff set to None
-                  winning_tile, lowest_y_pos, lifespan, from_chromosome=True)
+                  winning_tile, lowest_y_pos, lifespan, id, from_chromosome=True)
         car._chromosome = np.copy(chromosome)
         car.decode_chromosome()
         return car
@@ -405,7 +408,7 @@ class Car(Individual):
         raise Exception('position is read only!')
 
 
-def create_random_car(world: b2World, winning_tile: b2Vec2, lowest_y_pos: float):
+def create_random_car(world: b2World, winning_tile: b2Vec2, lowest_y_pos: float, id: str):
     """
     Creates a random car based off the values found in settings.py under the settings dictionary
     """
@@ -488,7 +491,7 @@ def create_random_car(world: b2World, winning_tile: b2Vec2, lowest_y_pos: float)
                wheel_radii, wheel_densities, wheels_vertices_pol,  # wheel_motor_speeds,
                chassis_vertices, densities, 
                winning_tile, lowest_y_pos, 
-               lifespan=get_ga_constant('lifespan'))
+               lifespan=get_ga_constant('lifespan'), id=id)
 
 
 def create_random_chassis(world: b2World) -> b2Body:
