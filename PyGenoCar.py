@@ -326,6 +326,7 @@ class MainWindow(QMainWindow):
         self.out = None
         if (path is not None):
             self.out = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (self.width, self.height))
+            self.out.set(cv2.CAP_PROP_BITRATE, 1000) # reduce bitrate to reduce file size # 500 maybe
         
         self.manual_control = False
 
