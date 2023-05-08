@@ -85,14 +85,14 @@ def gaussian_mutation(chromosome: np.ndarray, prob_mutation: float,
     # print("chromosome_without_vertices LAST TWO:", chromosome_without_vertices[-2:, :])
 
     chromosome_without_vertices[-2:-1, :][
-        chromosome_without_vertices[-2:-1, :] <= get_boxcar_constant("min_wheel_radius")
+        chromosome_without_vertices[-2:-1, :] < get_boxcar_constant("min_wheel_radius")
     ] = 0.0  # get_boxcar_constant("min_wheel_radius")
     chromosome_without_vertices[-2:-1, :][
         chromosome_without_vertices[-2:-1, :] > get_boxcar_constant("max_wheel_radius")
         ] = get_boxcar_constant("max_wheel_radius")
 
     chromosome_without_vertices[-1:, :][
-        chromosome_without_vertices[-1:, :] <= get_boxcar_constant("min_wheel_density")
+        chromosome_without_vertices[-1:, :] < get_boxcar_constant("min_wheel_density")
         ] = 0.0  # get_boxcar_constant("min_wheel_density")
     chromosome_without_vertices[-1:, :][
         chromosome_without_vertices[-1:, :] > get_boxcar_constant("max_wheel_density")

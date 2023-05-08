@@ -1,6 +1,7 @@
 *.DS_Store
-savepop/*
-video/*
+savepop*/*
+video*/*
+*.png
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
