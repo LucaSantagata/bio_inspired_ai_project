@@ -54,11 +54,11 @@ settings['boxcar'] = {
     'gaussian_floor_seed': (0, int),
 
     # MN MODIFIED if the tiles are strange or not
-    'min_num_section_per_tile': (1, int), # MN MODIFIED min number of sections per tile
-    'max_num_section_per_tile': (1, int), # MN MODIFIED max number of sections per tile
+    'min_num_section_per_tile': (1, int),  # MN MODIFIED min number of sections per tile
+    'max_num_section_per_tile': (1, int),  # MN MODIFIED max number of sections per tile
     
+    # Type of floor : 'gaussian', 'ramp', 'jagged', 'holes'
     'floor_creation_type': ('gaussian', str),
-    # 'gaussian', 'ramp', 'jagged', 'holes'
     ### Floor - Gaussian random. Used when 'floor_creation_type' == 'gaussian' ###
     # Only needed if using gaussian random floor creation
     'tile_angle_mu': (8, float),
@@ -82,8 +82,8 @@ settings['boxcar'] = {
     'ramp_distance_needed_to_jump': (10, float),
 
     ### Floor - holes. 
-    'number_of_holes': (5, int), # MN MODIFIED number of holes
-    'hole_distance_needed_to_jump': (1, float), # MN MODIFIED the first jump distance
+    'number_of_holes': (5, int),  # MN MODIFIED number of holes
+    'hole_distance_needed_to_jump': (1, float),  # MN MODIFIED the first jump distance
 
     ### Jagged - ramp. Used when 'floor_creation_type' == 'jagged' ###
     # Only needed if using jaged floor creation
@@ -191,6 +191,11 @@ settings['ga'] = {
     "fitness_function2": (fitness_function2, any)
 }
 
+settings['window'] = {
+    'width': (1920, int),
+    'height': (1080, int)
+}
+
 
 def fitness_scale_function(x: float) -> float:
     return (math.atan(x) + math.pi/2) if x <= 0 else (math.pow(x, (3/4)) + math.pi/2)
@@ -251,6 +256,10 @@ def _get_constant(constant: str, controller: str) -> Any:
     return value
 
 
+def get_window_constant(constant: str) -> Any:
+    return _get_constant(constant, 'window')
+
+
 def get_boxcar_constant(constant: str) -> Any:
     return _get_constant(constant, 'boxcar')
 
@@ -263,13 +272,14 @@ def get_settings() -> Any:
     return settings
 
 
-def update_settings_value(controller: str, constant: str, new_value: tuple, frame: int, dir: str, file_name:str):
-    if file_name not in os.listdir(dir):
-        with open(os.path.join(dir, file_name), "w") as f:
-            f.write("frame,controller,constant,old_value,new_value\n")
+def update_settings_value(controller: str, constant: str, new_value: tuple, frame: int = -1, dir: str = "", file_name: str = "", should_log: bool = False):
+    if should_log:
+        if file_name not in os.listdir(dir):
+            with open(os.path.join(dir, file_name), "w") as f:
+                f.write("frame,controller,constant,old_value,new_value\n")
 
-    with open(os.path.join(dir, file_name), "a") as f:
-        f.write(f"{frame},{controller},{constant},{settings[controller][constant]},{new_value}\n")
+        with open(os.path.join(dir, file_name), "a") as f:
+            f.write(f"{frame},{controller},{constant},{settings[controller][constant]},{new_value}\n")
 
     settings[controller][constant] = new_value
     __settings_cache[(constant, controller)] = new_value[0]

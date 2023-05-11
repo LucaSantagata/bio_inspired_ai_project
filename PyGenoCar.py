@@ -1,6 +1,6 @@
 import pandas as pd
 from PyQt5 import QtGui, QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QScrollArea, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QFormLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QScrollArea, QStackedWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QFormLayout, QComboBox, QGridLayout
 from PyQt5.QtGui import QPainter, QBrush, QPen, QPolygonF, QColor, QPixmap, QImage, QFont, QFontMetricsF
 from PyQt5.QtCore import Qt, QPointF, QTimer, QRect, QRectF
 from typing import Optional, Tuple, List, Dict, Any
@@ -16,7 +16,7 @@ from genetic_algorithm.individual import Individual
 from genetic_algorithm.crossover import single_point_binary_crossover as SPBX
 from genetic_algorithm.mutation import gaussian_mutation
 from genetic_algorithm.selection import elitism_selection, roulette_wheel_selection, tournament_selection
-from settings import get_boxcar_constant, get_ga_constant, get_settings, update_settings_value
+from settings import get_boxcar_constant, get_ga_constant, get_settings, get_window_constant, update_settings_value
 import settings
 from windows import SettingsWindow, StatsWindow, draw_border
 import os
@@ -192,14 +192,126 @@ def _set_painter(painter: QPainter, color: Qt.GlobalColor, fill: bool, with_anti
         painter.setRenderHint(QPainter.Antialiasing)
 
 
+class InitWindow(QWidget):
+    def __init__(self, stacked_window, output_path, _datetime, replay):
+        super().__init__()
+
+        self.initUI()
+
+        self.floor_type = None
+        self.gravity = None
+        self.tiles_type = None
+
+        self.stacked_window = stacked_window
+
+        self.output_path = output_path
+        self._datetime = _datetime
+        self.replay = replay
+
+    def initUI(self):
+        # Create combo box for floors
+        floor_label = QLabel('Floor type')
+        self.floor_combo = QComboBox(self)
+        self.floor_combo.addItem("Gaussian")
+        self.floor_combo.addItem("Ramp")
+        self.floor_combo.addItem("Jagger")
+        self.floor_combo.addItem("Holes")
+        self.floor_combo.move(50, 50)
+
+        # Create combo box for gravities
+        gravity_label = QLabel('Available gravities')
+        self.gravity_combo = QComboBox(self)
+        self.gravity_combo.addItem("Earth") # -9.81
+        self.gravity_combo.addItem("Mars") # -3.711
+        self.gravity_combo.addItem("Moon") # -1.622
+        self.gravity_combo.move(50, 100)
+
+        # Create combo box for tiles
+        tiles_label = QLabel('Tiles type')
+        self.tiles_combo = QComboBox(self)
+        self.tiles_combo.addItem("Straight Line")
+        self.tiles_combo.addItem("Circle")
+        self.tiles_combo.addItem("Triangle")
+        self.tiles_combo.addItem("Random Polygon")
+        self.tiles_combo.move(50, 150)
+
+        # Create send update button
+        set_button = QPushButton('Set parameters', self)
+        set_button.clicked.connect(self.set_parameters)
+
+        gridLayout = QGridLayout()
+        gridLayout.addWidget(floor_label, 0, 0)
+        gridLayout.addWidget(self.floor_combo, 0, 1)
+
+        gridLayout.addWidget(gravity_label, 1, 0)
+        gridLayout.addWidget(self.gravity_combo, 1, 1)
+
+        gridLayout.addWidget(tiles_label, 2, 0)
+        gridLayout.addWidget(self.tiles_combo, 2, 1)
+
+        gridLayout.addWidget(set_button, 3, 0)
+        self.setLayout(gridLayout)
+
+        # Imposta le dimensioni della finestra
+        self.setGeometry(0, 0, get_window_constant('width'), get_window_constant('height'))
+        self.setWindowTitle('Setting window')
+        self.show()
+
+    def set_parameters(self):
+        print("Set parameters")
+
+        self.floor_type = self.floor_combo.currentText()
+        self.gravity = self.gravity_combo.currentText()
+        self.tiles_type = self.tiles_combo.currentText()
+
+        if self.floor_type == 'Gaussian':
+            update_settings_value("boxcar", "floor_creation_type", ("gaussian", str))
+        elif self.floor_type == 'Ramp':
+            update_settings_value("boxcar", "floor_creation_type", ("ramp", str))
+        elif self.floor_type == 'Jagger':
+            update_settings_value("boxcar", "floor_creation_type", ("jagger", str))
+        elif self.floor_type == 'Holes':
+            update_settings_value("boxcar", "floor_creation_type", ("holes", str))
+
+        if self.gravity == 'Earth':
+            update_settings_value("boxcar", "gravity", ((0, -9.81), tuple))
+        elif self.gravity == 'Mars':
+            update_settings_value("boxcar", "gravity", ((0, -3.711), tuple))
+        elif self.gravity == 'Moon':
+            update_settings_value("boxcar", "gravity", ((0, -1.622), tuple))
+
+        if self.tiles_type == 'Straight Line':
+            update_settings_value("boxcar", "min_num_section_per_tile", (1, int))
+            update_settings_value("boxcar", "max_num_section_per_tile", (1, int))
+        elif self.tiles_type == 'Circle':
+            update_settings_value("boxcar", "min_num_section_per_tile", (10, int))
+            update_settings_value("boxcar", "max_num_section_per_tile", (10, int))
+        elif self.tiles_type == 'Triangle':
+            update_settings_value("boxcar", "min_num_section_per_tile", (2, int))
+            update_settings_value("boxcar", "max_num_section_per_tile", (2, int))
+        elif self.tiles_type == 'Random Polygon':
+            update_settings_value("boxcar", "min_num_section_per_tile", (3, int))
+            update_settings_value("boxcar", "max_num_section_per_tile", (8, int))
+
+        # self.close()
+
+        world = b2World(get_boxcar_constant('gravity'))
+
+        self.window = MainWindow(world, self.output_path, self._datetime, self.replay)
+        self.stacked_window.addWidget(self.window)
+        self.stacked_window.setFixedWidth(get_window_constant('width'))
+        self.stacked_window.setFixedHeight(get_window_constant('height'))
+        self.stacked_window.setCurrentWidget(self.window)
+
+
 class GameWindow(QWidget):
     def __init__(self, parent, size, world, floor, cars, leader):
         super().__init__(parent)
         self.size = size
         self.world = world
         self.title = 'Test'
-        self.top = 150
-        self.left = 150
+        self.top = 0
+        self.left = 0
 
         self.floor = floor
         self.leader: Car = leader  # Track the leader
@@ -306,11 +418,13 @@ class MainWindow(QMainWindow):
 
         self.world = world
         self.title = 'Genetic Algorithm - Cars'
-        self.top = 150
-        self.left = 150
+        # self.top = 150
+        # self.left = 150
+        self.top = 0
+        self.left = 0
 
-        self.width = 1920
-        self.height = 1080
+        self.width = get_window_constant('width')
+        self.height = get_window_constant('height')
 
         self.max_fitness = 0.0
         self.cars = []
@@ -342,6 +456,7 @@ class MainWindow(QMainWindow):
         # run at a time. This flag is for deciding when we are done with that so we can move on to crossover
         # and mutation.
         self._creating_random_cars = True
+        self._all_gen_winners = 0
 
         self.num_car_generated = 0
     
@@ -574,7 +689,9 @@ class MainWindow(QMainWindow):
 
     def _set_previous_gen_num_winners(self) -> None:
         winners = sum(ind.is_winner for ind in self.population.individuals)
+        self._all_gen_winners += winners
         self.stats_window.num_solved_last_gen.setText(str(winners))
+        self.stats_window.num_cum_solved_gen.setText(str(self._all_gen_winners))
 
     def _create_num_offspring(self, number_of_offspring) -> List[Individual]:
         """
@@ -1075,12 +1192,19 @@ if __name__ == "__main__":
     else:
         output_path = None
 
-    world = b2World(get_boxcar_constant('gravity'))
     App = QApplication(sys.argv)
-    window = MainWindow(world, output_path, _datetime, replay)
+    # world = b2World(get_boxcar_constant('gravity'))
+    # window = MainWindow(world, output_path, _datetime, replay)
+
+    stacked_widget = QStackedWidget()
+    first_window = InitWindow(stacked_widget, output_path, _datetime, replay)
+    stacked_widget.addWidget(first_window)
+    stacked_widget.setCurrentWidget(first_window)
+    
+    stacked_widget.show()
 
     if args.save_video:
         App.exec_()
-        atexit.register(release(window))
+        atexit.register(release(stacked_widget.currentWidget()))
     else:
         sys.exit(App.exec_())
