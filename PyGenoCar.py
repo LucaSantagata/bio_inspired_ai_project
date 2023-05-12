@@ -2,8 +2,7 @@ import pandas as pd
 from PyQt5 import QtGui, QtWidgets
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QScrollArea, QStackedWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QFormLayout, QComboBox, QGridLayout, QCheckBox, QRadioButton, QMessageBox
 from PyQt5.QtGui import QPainter, QBrush, QPen, QPolygonF, QColor, QPixmap, QImage, QFont, QFontMetricsF
-from PyQt5.QtCore import Qt, QPointF, QTimer, QRect, QRectF
-from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import Qt, QPointF, QTimer, QRect, QRectF, QLineF
 from typing import Optional, Tuple, List, Dict, Any
 import argparse
 import dill as pickle
@@ -169,12 +168,16 @@ def draw_label(painter: QPainter, car: Car, adjust_painter: bool = True) -> None
         text_height = fm.height()
         # adjust the rectangle size to fit the text
         offset = 1
-        label_rect = QRectF(car.chassis.worldCenter[0] * text_scale - 4, car.chassis.worldCenter[1] * (-text_scale) - 15,  text_width + offset, text_height + 2*offset)
-        painter.rotate(180)
-        painter.drawText(label_rect, Qt.AlignCenter, label_text)
-        painter.drawRect(label_rect)
-        painter.rotate(-180)
-        painter.scale(-1*text_scale, 1*text_scale)
+        point = car.chassis.GetWorldPoint((0,0)) # get the center of the car
+        label_rect = QRectF(point[0] * text_scale - (text_width + offset)/2 , point[1] * (-text_scale) - 15,  text_width + offset, text_height + 2*offset) # create a rectangle around the text
+        painter.rotate(180) # rotate the painter so the text is not upside down
+        painter.setBrush(QBrush(Qt.white, Qt.SolidPattern)) # set the brush to white for filling the rectangle
+        painter.drawRect(label_rect) # draw the rectangle
+        painter.drawText(label_rect, Qt.AlignCenter, label_text) # draw the text
+        line = QLineF(point[0]* text_scale, point[1]* (-text_scale), label_rect.center().x(), label_rect.center().y()+ 2*offset)  # create the line here so it can be dynamic 
+        painter.drawLine(line) # draw the line
+        painter.rotate(-180) # rotate the painter back to normal
+        painter.scale(-1*text_scale, 1*text_scale) # scale the painter back to normal
 
 
 def _set_painter_solid(painter: QPainter, color: Qt.GlobalColor, with_antialiasing: bool = True, scale: int = scale):
