@@ -365,9 +365,10 @@ class InitWindow(QWidget):
             if self.replay_check.isChecked():
                 args.replay_from_filename = self.replay_line.text()
                 self.replay = True
-            else:
+            elif self.test_check.isChecked():
                 args.test_from_filename = self.test_line.text()
                 self.replay = True
+
             if self.save_pop_check.isChecked() and self.save_pop_check.isEnabled():
                 args.save_pop = self.save_pop_line.text()
             if self.save_video_check.isChecked():
