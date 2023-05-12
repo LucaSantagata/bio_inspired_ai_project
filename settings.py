@@ -2,6 +2,7 @@ import os
 from typing import Any, Tuple
 import numpy as np
 import math
+import random
 
 
 def fitness_function(max_position, num_wheels, total_chassis_volume, total_wheels_volume, frames) -> float:
@@ -51,7 +52,7 @@ settings['boxcar'] = {
     'floor_tile_height': (.15, float),  # .15
     'floor_tile_width': (1.5, float),  # 1.5
     'max_floor_tiles': (200, int),
-    'gaussian_floor_seed': (0, int),
+    'gaussian_floor_seed': (random.randint(1, 1000), int),
 
     # MN MODIFIED if the tiles are strange or not
     'min_num_section_per_tile': (1, int),  # MN MODIFIED min number of sections per tile

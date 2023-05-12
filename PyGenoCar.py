@@ -1,8 +1,9 @@
 import pandas as pd
 from PyQt5 import QtGui, QtWidgets
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QScrollArea, QStackedWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QFormLayout, QComboBox, QGridLayout
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QScrollArea, QStackedWidget, QPushButton, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QFormLayout, QComboBox, QGridLayout, QCheckBox, QRadioButton, QMessageBox
 from PyQt5.QtGui import QPainter, QBrush, QPen, QPolygonF, QColor, QPixmap, QImage, QFont, QFontMetricsF
 from PyQt5.QtCore import Qt, QPointF, QTimer, QRect, QRectF
+from PyQt5.QtCore import pyqtSignal
 from typing import Optional, Tuple, List, Dict, Any
 import argparse
 import dill as pickle
@@ -235,6 +236,30 @@ class InitWindow(QWidget):
         self.tiles_combo.addItem("Random Polygon")
         self.tiles_combo.move(50, 150)
 
+        # Create check boxes
+        self.save_pop_check = QCheckBox('Save population')
+        self.save_pop_line = QLineEdit()
+        self.save_pop_line.setPlaceholderText('Enter your dir path here')
+        self.save_pop_line.setText("./savepop/")
+
+        self.save_video_check = QCheckBox('Save video')
+        self.save_video_line = QLineEdit()
+        self.save_video_line.setPlaceholderText('Enter your dir path here')
+        self.save_video_line.setText("./video/")
+
+        self.none_check = QRadioButton('None')
+
+        self.replay_check = QRadioButton('Replay')
+        self.replay_line = QLineEdit()
+        self.replay_line.setPlaceholderText('Enter your file path here')
+
+        self.test_check = QRadioButton('Test')
+        self.test_line = QLineEdit()
+        self.test_line.setPlaceholderText('Enter your file path here')
+
+        self.replay_check.toggled.connect(self.check_toggle)
+        self.test_check.toggled.connect(self.check_toggle)
+
         # Create send update button
         set_button = QPushButton('Set parameters', self)
         set_button.clicked.connect(self.set_parameters)
@@ -249,13 +274,35 @@ class InitWindow(QWidget):
         gridLayout.addWidget(tiles_label, 2, 0)
         gridLayout.addWidget(self.tiles_combo, 2, 1)
 
-        gridLayout.addWidget(set_button, 3, 0)
+        gridLayout.addWidget(self.save_pop_check, 3, 0)
+        gridLayout.addWidget(self.save_pop_line, 3, 1)
+
+        gridLayout.addWidget(self.save_video_check, 4, 0)
+        gridLayout.addWidget(self.save_video_line, 4, 1)
+
+        gridLayout.addWidget(self.none_check, 5, 0)
+
+        gridLayout.addWidget(self.replay_check, 6, 0)
+        gridLayout.addWidget(self.replay_line, 6, 1)
+
+        gridLayout.addWidget(self.test_check, 7, 0)
+        gridLayout.addWidget(self.test_line, 7, 1)
+
+        gridLayout.addWidget(set_button, 8, 0)
         self.setLayout(gridLayout)
 
         # Imposta le dimensioni della finestra
         self.setGeometry(0, 0, get_window_constant('width'), get_window_constant('height'))
         self.setWindowTitle('Setting window')
         self.show()
+
+    def check_toggle(self):
+        if self.replay_check.isChecked() or self.test_check.isChecked():
+            self.save_pop_check.setEnabled(False)
+            self.save_pop_line.setEnabled(False)
+        else:
+            self.save_pop_check.setEnabled(True)
+            self.save_pop_line.setEnabled(True)
 
     def set_parameters(self):
         print("Set parameters")
@@ -293,15 +340,47 @@ class InitWindow(QWidget):
             update_settings_value("boxcar", "min_num_section_per_tile", (3, int))
             update_settings_value("boxcar", "max_num_section_per_tile", (8, int))
 
-        # self.close()
+        if (
+            (
+                self.save_pop_line.text() == '' and
+                self.save_pop_check.isChecked() and
+                self.save_pop_check.isEnabled()
+            ) or (
+                    self.save_video_line.text() == '' and
+                    self.save_video_check.isChecked()
+            ) or (
+                    self.replay_line.text() == '' and
+                    self.replay_check.isChecked()
+            ) or (
+                    self.test_line.text() == '' and
+                    self.test_check.isChecked()
+            )
+        ):
+            message = QMessageBox()
+            message.setWindowTitle('Error')
+            message.setText('Please fill in all fields.')
+            message.setIcon(QMessageBox.Critical)
+            message.exec_()
+        else:
+            if self.replay_check.isChecked():
+                args.replay_from_filename = self.replay_line.text()
+                self.replay = True
+            else:
+                args.test_from_filename = self.test_line.text()
+                self.replay = True
+            if self.save_pop_check.isChecked() and self.save_pop_check.isEnabled():
+                args.save_pop = self.save_pop_line.text()
+            if self.save_video_check.isChecked():
+                args.save_video = self.save_video_line.text()
 
-        world = b2World(get_boxcar_constant('gravity'))
+            world = b2World(get_boxcar_constant('gravity'))
 
-        self.window = MainWindow(world, self.output_path, self._datetime, self.replay)
-        self.stacked_window.addWidget(self.window)
-        self.stacked_window.setFixedWidth(get_window_constant('width'))
-        self.stacked_window.setFixedHeight(get_window_constant('height'))
-        self.stacked_window.setCurrentWidget(self.window)
+            self.window = MainWindow(world, self.output_path, self._datetime, self.replay)
+            self.stacked_window.addWidget(self.window)
+            self.stacked_window.move(0, 0)
+            self.stacked_window.setFixedWidth(get_window_constant('width'))
+            self.stacked_window.setFixedHeight(get_window_constant('height'))
+            self.stacked_window.setCurrentWidget(self.window)
 
 
 class GameWindow(QWidget):
@@ -1177,10 +1256,11 @@ if __name__ == "__main__":
             settings.update_settings_value(
                 "boxcar",
                 "gaussian_floor_seed",
-                (random.randint(1, 100), int),
+                (random.randint(1, 1000), int),
                 -1,
                 "/".join(name[0:-1]),
-                "settings_update_" + name[-1].split('.')[0] + ".csv"
+                "settings_update_" + name[-1].split('.')[0] + ".csv",
+                should_log=True
             )
 
     if args.save_video:
