@@ -510,7 +510,7 @@ class GameWindow(QWidget):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, world, video_path, _datetime, replay: bool = False, run: str = None):
+    def __init__(self, world, video_path, _datetime, replay: bool = False, run: str = ""):
         super().__init__()
 
         self.datetime = _datetime
@@ -1267,7 +1267,10 @@ if __name__ == "__main__":
         output_path = os.path.join(args.save_video, output_file)
         if not os.path.exists(args.save_video):
             # raise Exception('{} already exists. This would overwrite everything, choose a different folder or delete it and try again'.format(path))
-            os.makedirs(args.save_video)
+            try:
+                os.makedirs(args.save_video)
+            except FileExistsError:
+                print("File already created")
     else:
         output_path = None
 

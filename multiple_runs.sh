@@ -1,9 +1,10 @@
 #!/bin/bash
 
-while getopts R:dpP:vV:st flag
+while getopts R:r:dpP:vV:st flag
 do
     case "${flag}" in
-        R) run=${OPTARG};;
+        R) runs=${OPTARG};;
+        r) runatatime=${OPTARG};;
         d) default="default";;
         P) savepop=${OPTARG};;
         p) dp="savepop";;
@@ -14,64 +15,74 @@ do
     esac
 done
 
-#echo "$run , $default , $savepop , $dp , $savevideo , $dv , $seed , $test"
+#echo "$runs , $default , $savepop , $dp , $savevideo , $dv , $seed , $test"
 
 rand=$RANDOM
 default_savepop="./save_pop"
 default_savevideo="./save_video"
 
-for i in {1..$run}
+for i in {1..$[$runs/$runatatime]}
 do
-  echo "$i"
+#  echo "$i"
 
   cmd="python ./PyGenoCar.py --run "
   cmd+="$i"
-  cmd+="_"
-  cmd+="$rand"
 
-  if [[ ! -z $default ]]
-    then
-      echo "default"
-  fi
+  params="_"
+  params+="$rand"
+
+#  if [[ ! -z $default ]]
+#    then
+##      echo "default"
+#  fi
 
   if [[ ! -z "$savepop" ]]
     then
-      echo "savepop $savepop"
-      cmd+=" --save-pop $savepop"
+#      echo "savepop $savepop"
+      params+=" --save-pop $savepop"
   fi
 
   if [[ ( ! -z "$default" ) && ( ! -z "$dp" ) ]]
     then
-      echo "default"
-      echo "savepop $default_savepop"
-      cmd+=" --save-pop $default_savepop"
+#      echo "default"
+#      echo "savepop $default_savepop"
+      params+=" --save-pop $default_savepop"
   fi
 
   if [[ ! -z "$savevideo" ]]
     then
-      echo "savevideo $savevideo"
-      cmd+=" --save-video $savevideo"
+#      echo "savevideo $savevideo"
+      params+=" --save-video $savevideo"
   fi
 
   if [[ ( ! -z "$default" ) && ( ! -z "$dv" ) ]]
     then
-      echo "default"
-      echo "savevideo $default_savevideo"
-      cmd+=" --save-video $default_savevideo"
+#      echo "default"
+#      echo "savevideo $default_savevideo"
+      params+=" --save-video $default_savevideo"
   fi
 
   if [[ ! -z "$test" ]]
     then
-      echo "test $test"
-      cmd+=" --test-from-filename $test"
+#      echo "test $test"
+      params+=" --test-from-filename $test"
   fi
 
   if [[ ! -z "$seed" ]]
     then
-      echo "seed $rand"
-      cmd+=" --seed $rand"
+#      echo "seed $rand"
+      params+=" --seed $rand"
   fi
 
-  echo "$cmd"
-  eval "$cmd"
+  echo "$cmd-x$params"
+
+  finalcmd=""
+  for j in {1..$runatatime}
+    do
+      finalcmd+="($cmd-$j$params) & "
+  done
+
+  echo "$finalcmd wait"
+#  eval "($cmd-a$params) & ($cmd-b$params) & ($cmd-c$params) & wait"
+  eval "$finalcmd wait"
 done
