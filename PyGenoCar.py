@@ -649,7 +649,7 @@ class MainWindow(QMainWindow):
             # Set the population to be just the parents allowed for reproduction. Only really matters if `plus` method is used.
             # If `plus` method is used, there can be more individuals in the next generation, so this limits the number of parents.
             self.population.individuals = elitism_selection(
-                self.population, get_ga_constant('num_parents'))
+                self.population, get_ga_constant('elitism'))
 
             random.shuffle(self.population.individuals)
 
