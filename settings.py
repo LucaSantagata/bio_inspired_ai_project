@@ -160,28 +160,26 @@ settings['boxcar'] = {
 
 # Genetic algorithm specific settings
 settings['ga'] = {
-    "max_generations": (1, int),
+    "max_generations": (10, int),
 
     "min_fitness_value": (1e-10, float),
 
     # Selection
-    'num_parents': (40, int),
-    'num_offspring': (40, int),
+    'num_parents': (30, int),
+    'num_offspring': (30, int),
 
     'selection_type': ('plus', str),
     'lifespan': (5, float),
 
     # Mutation
-    'probability_gaussian': (1.00, float),
-    'gaussian_mutation_scale': (0.2, float),
-    'probability_random_uniform': (0.00, float),
-    'mutation_rate': (0.2, float),
+    'mutation_rate': (0.8, float),
+    'gaussian_mutation_scale': (0.4, float),
     'mutation_rate_type': ('static', str),
 
     # Crossover
-    'probability_SBX': (1, float),
+    'crossover_probability': (0.5, float), # MN Single point binary crossover probability
     'SBX_eta': (1, float),
-    'crossover_selection': ('roulette', str),
+    'crossover_selection': ('tournament', str), # MN should be in the selections section roulette, tournament
     'tournament_size': (10, int),
 
     "max_contacts_penalty": (50, int),

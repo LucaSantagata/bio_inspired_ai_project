@@ -566,10 +566,6 @@ class MainWindow(QMainWindow):
         # For now this is all I'm supporting, may change in the future. There really isn't a reason to use
         # uniform or single point here because all the values have different ranges, and if you clip them, it
         # can make those crossovers useless. Instead just use simulated binary crossover to ensure better crossover.
-        self._crossover_bins = np.cumsum([get_ga_constant('probability_SBX')])
-
-        self._mutation_bins = np.cumsum([get_ga_constant('probability_gaussian'),
-                                         get_ga_constant('probability_random_uniform')])
 
         self.init_window()
         self.stats_window.pop_size.setText(str(get_ga_constant('num_parents')))
@@ -1082,42 +1078,22 @@ class MainWindow(QMainWindow):
         """
         Perform crossover between two parent chromosomes and return TWO child chromosomes
         """
-        rand_crossover = random.random()
-        crossover_bucket = np.digitize(rand_crossover, self._crossover_bins)
-
         # SBX
-        if crossover_bucket == 0:
-            # c1_chromosome, c2_chromosome = SBX(p1_chromosome, p2_chromosome, get_ga_constant('SBX_eta'))
-            c1_chromosome, c2_chromosome = SPBX(p1_chromosome, p2_chromosome)
+        if random.random() <= get_ga_constant('crossover_probability'):
+            return SPBX(p1_chromosome, p2_chromosome)
         else:
-            raise Exception(
-                'Unable to determine valid crossover based off probabilities')
-
-        return c1_chromosome, c2_chromosome
+            return p1_chromosome, p2_chromosome
 
     def _mutation(self, chromosome: np.ndarray) -> None:
         """
         Randomly decide if we should perform mutation on a gene within the chromosome. This is done in place
         """
-        rand_mutation = random.random()
-        mutation_bucket = np.digitize(rand_mutation, self._mutation_bins)
-
         # Gaussian
-        if mutation_bucket == 0:
-            mutation_rate = get_ga_constant('mutation_rate')
-            if get_ga_constant('mutation_rate_type').lower() == 'dynamic':
-                mutation_rate = mutation_rate / \
-                    math.sqrt(self.current_generation + 1)
-            gaussian_mutation(chromosome, mutation_rate,
-                              scale=get_ga_constant('gaussian_mutation_scale'))
-
-        # Random uniform
-        elif mutation_bucket == 1:
-            # @TODO: add to this
-            pass
-        else:
-            raise Exception(
-                'Unable to determine valid mutation based off probabilities')
+        mutation_rate = get_ga_constant('mutation_rate')
+        if get_ga_constant('mutation_rate_type').lower() == 'dynamic':
+            mutation_rate = mutation_rate / \
+                math.sqrt(self.current_generation + 1)
+        gaussian_mutation(chromosome, mutation_rate, scale=get_ga_constant('gaussian_mutation_scale'))
 
     def addImageToVideo(self):
         pixmap = QPixmap(self.width, self.height)
