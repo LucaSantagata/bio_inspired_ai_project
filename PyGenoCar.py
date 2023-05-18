@@ -386,7 +386,15 @@ class InitWindow(QWidget):
             if self.save_video_check.isChecked():
                 args.save_video = self.save_video_line.text()
 
+                if not os.path.exists(args.save_video):
+                    # raise Exception('{} already exists. This would overwrite everything, choose a different folder or delete it and try again'.format(path))
+                    os.makedirs(args.save_video)
+
             world = b2World(get_boxcar_constant('gravity'))
+
+            if args.save_video:
+                output_file = "video_" + _datetime + ".mp4"
+                self.output_path = os.path.join(args.save_video, output_file)
 
             self.window = MainWindow(world, self.output_path, self._datetime, self.replay)
             self.stacked_window.addWidget(self.window)
@@ -502,10 +510,16 @@ class GameWindow(QWidget):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, world, path, _datetime, replay=False):
+    def __init__(self, world, video_path, _datetime, replay: bool = False, run: str = None):
         super().__init__()
+
         self.datetime = _datetime
-        self.file_name = self.datetime + ".csv"
+        self.run = run
+        self.file_name = self.datetime + "_" + self.run + ".csv"
+        if video_path is not None:
+            self.video_path = video_path[:video_path.index(".m")] + "_run" + self.run + video_path[video_path.index(".m"):]
+        else:
+            self.video_path = None
 
         self.world = world
         self.title = 'Genetic Algorithm - Cars'
@@ -527,10 +541,10 @@ class MainWindow(QMainWindow):
         self.replay = replay
 
         self.out = None
-        if (path is not None):
-            self.out = cv2.VideoWriter(path, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (self.width, self.height))
-            self.out.set(cv2.CAP_PROP_BITRATE, 1000) # reduce bitrate to reduce file size # 500 maybe
-        
+        if self.video_path is not None:
+            self.out = cv2.VideoWriter(self.video_path, cv2.VideoWriter_fourcc(*'mp4v'), FPS, (self.width, self.height))
+            self.out.set(cv2.CAP_PROP_BITRATE, 1000)  # reduce bitrate to reduce file size # 500 maybe
+
         self.manual_control = False
 
         self.current_generation = 0
@@ -615,7 +629,7 @@ class MainWindow(QMainWindow):
                 if not os.path.exists(path):
                     # raise Exception('{} already exists. This would overwrite everything, choose a different folder or delete it and try again'.format(path))
                     os.makedirs(path)
-                save_population(path, self.file_name, self.population, get_settings(), self.current_generation, self.datetime)
+                save_population(path, self.file_name, self.population, get_settings(), self.current_generation, self.datetime, self.run)
             # Save best? 
             if args.save_best:
                 save_car(args.save_best, 'car_{}'.format(self.current_generation), self.population.fittest_individual, get_settings(), self.current_generation)
@@ -1155,13 +1169,13 @@ class MainWindow(QMainWindow):
     def closeEvent(self, event):
         global args
         if args.save_pop_on_close:
-            save_population(args.save_pop_on_close, self.file_name, self.population, get_settings(), self.current_generation, self.datetime)
+            save_population(args.save_pop_on_close, self.file_name, self.population, get_settings(), self.current_generation, self.run)
 
     def getVideo(self):
         return self.out
 
 
-def save_population(population_folder: str, file_name: str, population: Population, settings_dict: Dict[str, Any], current_generation: int, datetime: str) -> None:
+def save_population(population_folder: str, file_name: str, population: Population, settings_dict: Dict[str, Any], current_generation: int, datetime: str, run: str = 0) -> None:
     """
     Saves all cars in the population
     """
@@ -1171,10 +1185,10 @@ def save_population(population_folder: str, file_name: str, population: Populati
     # This will not save anything the first generation since those are just random cars and nothing has
     # been added to the population yet.
 
-    settings_fname = os.path.join(population_folder, f'settings_{datetime}.csv')
+    settings_fname = os.path.join(population_folder, f'settings_{datetime}_run{run}.csv')
     pd.DataFrame(settings_dict).to_csv(settings_fname)
 
-    settings_fname = os.path.join(population_folder, f'settings_{datetime}.pkl')
+    settings_fname = os.path.join(population_folder, f'settings_{datetime}_run{run}.pkl')
     with open(settings_fname, 'wb') as out:
         pickle.dump(settings_dict, out)
 
@@ -1217,6 +1231,12 @@ def parse_args():
     parser.add_argument('--test-from-filename', dest='test_from_filename',
                         type=str, help='destination to test run from')
 
+    parser.add_argument('--run', dest='run',
+                        type=str, help='Index of the run')
+
+    parser.add_argument('--seed', dest='seed',
+                        type=str, help='Floor seed')
+
     args = parser.parse_args()
     return args
 
@@ -1252,6 +1272,8 @@ if __name__ == "__main__":
         replay = True
 
         if args.test_from_filename:
+            print("Test from filename:", args.test_from_filename)
+
             _datetime = "test_" + name[-1].split('.')[0]
             settings.update_settings_value(
                 "boxcar",
@@ -1273,18 +1295,42 @@ if __name__ == "__main__":
         output_path = None
 
     App = QApplication(sys.argv)
-    # world = b2World(get_boxcar_constant('gravity'))
-    # window = MainWindow(world, output_path, _datetime, replay)
 
-    stacked_widget = QStackedWidget()
-    first_window = InitWindow(stacked_widget, output_path, _datetime, replay)
-    stacked_widget.addWidget(first_window)
-    stacked_widget.setCurrentWidget(first_window)
-    
-    stacked_widget.show()
+    if args.run:
+        print("RUN:", args.run)
+
+        if args.seed:
+            print("Seed:", args.seed)
+
+            settings.update_settings_value(
+                "boxcar",
+                "gaussian_floor_seed",
+                (int(args.seed), int),
+                -1,
+                # "/".join(name[0:-1]),
+                # "settings_update_" + name[-1].split('.')[0] + "_run" + args.run + ".csv",
+                should_log=False
+            )
+
+        world = b2World(get_boxcar_constant('gravity'))
+        window = MainWindow(world, output_path, _datetime, replay, run=str(args.run))
+        window.move(0, 0)
+        window.setFixedWidth(get_window_constant('width'))
+        window.setFixedHeight(get_window_constant('height'))
+
+    else:
+        stacked_widget = QStackedWidget()
+        first_window = InitWindow(stacked_widget, output_path, _datetime, replay)
+        stacked_widget.addWidget(first_window)
+        stacked_widget.setCurrentWidget(first_window)
+
+        stacked_widget.show()
 
     if args.save_video:
         App.exec_()
-        atexit.register(release(stacked_widget.currentWidget()))
+        try:
+            atexit.register(release(window.currentWidget()))
+        except:
+            atexit.register(release(stacked_widget.currentWidget()))
     else:
         sys.exit(App.exec_())
