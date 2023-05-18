@@ -422,14 +422,13 @@ class StatsWindow(QWidget):
 
         self._add_ga_entry('selection_type', 'Selection Type:', font_bold, normal_font)
         # Prob mutation
-        mutation_prob = '{:.1f}% Gaussian\n{:.1f}% Uniform'.format(
-            get_ga_constant('probability_gaussian') * 100.0,
-            get_ga_constant('probability_random_uniform') * 100.0
+        mutation_prob = '{:.1f}% Gaussian'.format(
+            get_ga_constant('mutation_rate') * 100.0
         )
         self._add_ga_entry(None, 'Prob. Mutation:', font_bold, normal_font, force_value=mutation_prob)
         # Prob crossover
         crossover_prob = '{:.1f}% SBX'.format(
-            get_ga_constant('probability_SBX') * 100.0
+            get_ga_constant('crossover_probability') * 100.0
         )
         self._add_ga_entry(None, 'Prob. Crossover:', font_bold, normal_font, force_value=crossover_prob)
         # Crossover selection
