@@ -32,7 +32,7 @@ import atexit
 ## Constants ##
 scale = 70
 default_scale = 70
-FPS = 60
+FPS = get_boxcar_constant("fps")
 
 
 @unique
@@ -267,31 +267,40 @@ class InitWindow(QWidget):
         set_button = QPushButton('Set parameters', self)
         set_button.clicked.connect(self.set_parameters)
 
+        idx = 0
         gridLayout = QGridLayout()
-        gridLayout.addWidget(floor_label, 0, 0)
-        gridLayout.addWidget(self.floor_combo, 0, 1)
+        gridLayout.addWidget(floor_label, idx, 0)
+        gridLayout.addWidget(self.floor_combo, idx, 1)
 
-        gridLayout.addWidget(gravity_label, 1, 0)
-        gridLayout.addWidget(self.gravity_combo, 1, 1)
+        idx += 1
+        gridLayout.addWidget(gravity_label, idx, 0)
+        gridLayout.addWidget(self.gravity_combo, idx, 1)
 
-        gridLayout.addWidget(tiles_label, 2, 0)
-        gridLayout.addWidget(self.tiles_combo, 2, 1)
+        idx += 1
+        gridLayout.addWidget(tiles_label, idx, 0)
+        gridLayout.addWidget(self.tiles_combo, idx, 1)
 
-        gridLayout.addWidget(self.save_pop_check, 3, 0)
-        gridLayout.addWidget(self.save_pop_line, 3, 1)
+        idx += 1
+        gridLayout.addWidget(self.save_pop_check, idx, 0)
+        gridLayout.addWidget(self.save_pop_line, idx, 1)
 
-        gridLayout.addWidget(self.save_video_check, 4, 0)
-        gridLayout.addWidget(self.save_video_line, 4, 1)
+        idx += 1
+        gridLayout.addWidget(self.save_video_check, idx, 0)
+        gridLayout.addWidget(self.save_video_line, idx, 1)
 
-        gridLayout.addWidget(self.none_check, 5, 0)
+        idx += 1
+        gridLayout.addWidget(self.none_check, idx, 0)
 
-        gridLayout.addWidget(self.replay_check, 6, 0)
-        gridLayout.addWidget(self.replay_line, 6, 1)
+        idx += 1
+        gridLayout.addWidget(self.replay_check, idx, 0)
+        gridLayout.addWidget(self.replay_line, idx, 1)
 
-        gridLayout.addWidget(self.test_check, 7, 0)
-        gridLayout.addWidget(self.test_line, 7, 1)
+        idx += 1
+        gridLayout.addWidget(self.test_check, idx, 0)
+        gridLayout.addWidget(self.test_line, idx, 1)
 
-        gridLayout.addWidget(set_button, 8, 0)
+        idx += 1
+        gridLayout.addWidget(set_button, idx, 0)
         self.setLayout(gridLayout)
 
         # Imposta le dimensioni della finestra
@@ -417,7 +426,6 @@ class GameWindow(QWidget):
             self._camera.x = self.leader.chassis.position.x
             self._camera.y = self.leader.chassis.position.y
 
-
     def pan_camera_in_direction(self, direction: str, amount: int) -> None:
         diff_x, diff_y = 0, 0
         if direction.lower()[0] == 'u':
@@ -501,8 +509,6 @@ class MainWindow(QMainWindow):
 
         self.world = world
         self.title = 'Genetic Algorithm - Cars'
-        # self.top = 150
-        # self.left = 150
         self.top = 0
         self.left = 0
 
@@ -542,7 +548,7 @@ class MainWindow(QMainWindow):
         self._all_gen_winners = 0
 
         self.num_car_generated = 0
-    
+
         # Determine how large the next generation is
         if get_ga_constant('selection_type').lower() == 'plus':
             self._next_gen_size = get_ga_constant(
@@ -612,7 +618,7 @@ class MainWindow(QMainWindow):
                 save_population(path, self.file_name, self.population, get_settings(), self.current_generation, self.datetime)
             # Save best? 
             if args.save_best:
-                save_car(args.save_best, 'car_{}'.format(self.current_generation), self.population.fittest_individual, get_settings(), self.current_generation, self.datetime)
+                save_car(args.save_best, 'car_{}'.format(self.current_generation), self.population.fittest_individual, get_settings(), self.current_generation)
 
             self._set_previous_gen_avg_fitness()
             self._set_previous_gen_num_winners()
@@ -701,8 +707,6 @@ class MainWindow(QMainWindow):
         }
 
         # Create game_window - where the game is played
-        # self.game_window = GameWindow(self.centralWidget, (800, 500), self.world, self.floor, self.cars, self.leader)
-        # self.game_window.setGeometry(QRect(0, 0, 800, 500))
         self.game_window = GameWindow(
             self.centralWidget,
             (self._game_window_sizes["w"], self._game_window_sizes["h"]),
@@ -714,35 +718,30 @@ class MainWindow(QMainWindow):
         self.game_window.setObjectName("game_window")
 
         # Create stats_window
-        # self.stats_window = StatsWindow(self.centralWidget, (800, 200))
-        # self.stats_window.setGeometry(QRect(0, 500, 800, 200))
         self.stats_window = StatsWindow(
             self.centralWidget,
             (self._stats_window_sizes["w"], self._stats_window_sizes["h"])
         )
         self.stats_window.setGeometry(QRect(
-            self._stats_window_sizes["x"], self._stats_window_sizes[
-                "y"], self._stats_window_sizes["w"], self._stats_window_sizes["h"]
+            self._stats_window_sizes["x"], self._stats_window_sizes["y"],
+            self._stats_window_sizes["w"], self._stats_window_sizes["h"]
         ))
         self.stats_window.setObjectName('stats_window')
 
         # Create settings_window - just a bunch of settings of the game and how they were defined, etc.
-        # self.settings_window = SettingsWindow(self.centralWidget, (300, 700))
-        # self.settings_window.setGeometry(QRect(800, 0, 300, 700))
         self.settings_window = SettingsWindow(
             self.centralWidget,
             (self._settings_window_sizes["x"],
              self._settings_window_sizes["y"])
         )
         self.settings_window.setGeometry(QRect(
-            self._settings_window_sizes["x"], self._settings_window_sizes[
-                "y"], self._settings_window_sizes["w"], self._settings_window_sizes["h"]
+            self._settings_window_sizes["x"], self._settings_window_sizes["y"],
+            self._settings_window_sizes["w"], self._settings_window_sizes["h"]
         ))
         self.settings_window.setObjectName('settings_window')
 
         # Add main window
         self.main_window = QWidget(self)
-        # self.main_window.setGeometry(QRect(0, 0, 800, 500))
         self.main_window.setGeometry(QRect(0, 0, self.width, self.height))
         self.main_window.setObjectName('main_window')
 
@@ -993,7 +992,7 @@ class MainWindow(QMainWindow):
                     if not os.path.exists(path):
                         # raise Exception('{} already exists. This would overwrite everything, choose a different folder or delete it and try again'.format(path))
                         os.makedirs(path)
-                    save_population(path, self.file_name, self.population, get_settings(), self.current_generation, self.datetime)
+                    save_population(path, self.file_name, self.population, get_settings(), self.current_generation)
 
                 self.state = States.STOP
                 return
@@ -1063,8 +1062,7 @@ class MainWindow(QMainWindow):
                 self.next_generation()
                 return
             else:
-                raise Exception(
-                    'You should not be able to get here, but if you did, awesome! Report this to me if you actually get here.')
+                raise Exception('You should not be able to get here, but if you did, awesome! Report this to me if you actually get here.')
 
         self.world.ClearForces()
 
@@ -1090,8 +1088,7 @@ class MainWindow(QMainWindow):
             # c1_chromosome, c2_chromosome = SBX(p1_chromosome, p2_chromosome, get_ga_constant('SBX_eta'))
             c1_chromosome, c2_chromosome = SPBX(p1_chromosome, p2_chromosome)
         else:
-            raise Exception(
-                'Unable to determine valid crossover based off probabilities')
+            raise Exception('Unable to determine valid crossover based off probabilities')
 
         return c1_chromosome, c2_chromosome
 
@@ -1193,7 +1190,6 @@ def save_population(population_folder: str, file_name: str, population: Populati
             file_name=file_name,
             car=car,
             current_generation=current_generation,
-            datetime=datetime
         )
 
 
@@ -1227,7 +1223,7 @@ def parse_args():
 
 def release(win):
     win.getVideo().release()
-    sys.exit()
+    sys.exit("Released")
 
 
 if __name__ == "__main__":

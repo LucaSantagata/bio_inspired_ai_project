@@ -582,7 +582,7 @@ def smart_clip(chromosome: np.ndarray) -> None:
             out=chromosome[genes['chassis_densities'], :])
 
 
-def save_car(population_folder: str, file_name: str, car: Individual, current_generation: int, datetime: str) -> None:
+def save_car(population_folder: str, file_name: str, car: Individual, current_generation: int) -> None:
     """
     Save a car. This saves one and sometimes two things:
     1. Saves the chromosome representation of the individual

@@ -123,7 +123,7 @@ settings['boxcar'] = {
 
     # Display
     'show': (True, bool),  # Whether or not to display anything
-    'fps': (60.0, float),
+    'fps': (60, int),
     'run_at_a_time': (20, int),
     'should_smooth_camera_to_leader': (False, bool),
     'show_label': (True, bool),  # MN MODIFIED show label of the car or not
