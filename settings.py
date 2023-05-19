@@ -168,6 +168,8 @@ settings['ga'] = {
     'num_parents': (30, int),
     'num_offspring': (30, int),
 
+    'elitism': (5, int),
+
     'selection_type': ('plus', str),
     'lifespan': (5, float),
 
@@ -177,9 +179,9 @@ settings['ga'] = {
     'mutation_rate_type': ('static', str),
 
     # Crossover
-    'crossover_probability': (0.5, float), # MN Single point binary crossover probability
+    'crossover_probability': (0.5, float), # Single point binary crossover probability
     'SBX_eta': (1, float),
-    'crossover_selection': ('tournament', str), # MN should be in the selections section roulette, tournament
+    'crossover_selection': ('tournament', str), 
     'tournament_size': (10, int),
 
     "max_contacts_penalty": (50, int),
