@@ -32,7 +32,8 @@ rand=$RANDOM
 default_savepop="./save_pop"
 default_savevideo="./save_video"
 
-for i in {1..$[$runs/$runatatime]}
+i=1
+while [ $i -le $((runs/runatatime)) ];
 do
 #  echo "$i"
 
@@ -81,12 +82,15 @@ do
   fi
 
   finalcmd=""
-  for j in {1..$runatatime}
+  j=1
+  while [ $j -le $runatatime ];
     do
       finalcmd+="($cmd-$j$params) & "
+      j=$((j+1))
   done
 
   echo "$finalcmd wait"
 #  eval "($cmd-a$params) & ($cmd-b$params) & ($cmd-c$params) & wait"
   eval "$finalcmd wait"
+  i=$((i+1))
 done
