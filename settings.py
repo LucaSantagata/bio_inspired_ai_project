@@ -175,7 +175,7 @@ settings['ga'] = {
 
     # Mutation
     'mutation_rate': (0.8, float),
-    'gaussian_mutation_scale': (0.4, float),
+    'gaussian_mutation_scale': (0.2, float),
     'mutation_rate_type': ('static', str),
 
     # Crossover

@@ -1,21 +1,32 @@
 #!/bin/bash
 
-while getopts R:r:dpP:vV:st flag
+help="Commands:
+\t- R = number of total runs
+\t- r = runs at a time
+\t- d = default params and savepop
+\t- p = change savepop directory
+\t- v = default savevideo
+\t- V = change savevideo directory
+\t- s = generate random but static seed for all runs"
+
+while getopts R:r:dp:vV:sH flag
 do
     case "${flag}" in
         R) runs=${OPTARG};;
         r) runatatime=${OPTARG};;
         d) default="default";;
-        P) savepop=${OPTARG};;
-        p) dp="savepop";;
+        p) savepop=${OPTARG};;
+#        p) dp="savepop";;
         V) savevideo=${OPTARG};;
         v) dv="savevideo";;
         s) seed="seed";;
-        t) test=${OPTARG};;
+        H) echo "$help"; exit;;
+        *) echo "Wrong param"; exit;;
     esac
 done
 
-#echo "$runs , $default , $savepop , $dp , $savevideo , $dv , $seed , $test"
+#echo "$runs , $runatatime , $default , $savepop , $dp , $savevideo , $dv , $seed , $test"
+
 
 rand=$RANDOM
 default_savepop="./save_pop"
@@ -31,10 +42,11 @@ do
   params="_"
   params+="$rand"
 
-#  if [[ ! -z $default ]]
-#    then
-##      echo "default"
-#  fi
+  if [[ ! -z $default ]]
+    then
+#      echo "default"
+      dp="savepop"
+  fi
 
   if [[ ! -z "$savepop" ]]
     then
@@ -62,19 +74,11 @@ do
       params+=" --save-video $default_savevideo"
   fi
 
-  if [[ ! -z "$test" ]]
-    then
-#      echo "test $test"
-      params+=" --test-from-filename $test"
-  fi
-
   if [[ ! -z "$seed" ]]
     then
 #      echo "seed $rand"
       params+=" --seed $rand"
   fi
-
-  echo "$cmd-x$params"
 
   finalcmd=""
   for j in {1..$runatatime}
