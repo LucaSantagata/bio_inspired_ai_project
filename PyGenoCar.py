@@ -533,6 +533,7 @@ class MainWindow(QMainWindow):
         self.cars = []
         self.population = Population([])
         self.state = States.FIRST_GEN
+        self.elites_state = False
         # Used when you are in state 1, i.e. creating new cars from the old population
         self._next_pop = []
         self.current_batch = 1
@@ -565,8 +566,7 @@ class MainWindow(QMainWindow):
 
         # Determine how large the next generation is
         if get_ga_constant('selection_type').lower() == 'plus':
-            self._next_gen_size = get_ga_constant(
-                'num_parents') + get_ga_constant('num_offspring')
+            self._next_gen_size = get_ga_constant('num_parents') + get_ga_constant('num_offspring')
         elif get_ga_constant('selection_type').lower() == 'comma':
             self._next_gen_size = get_ga_constant('num_parents')
         else:
@@ -605,13 +605,14 @@ class MainWindow(QMainWindow):
             elif get_ga_constant('selection_type').lower() == 'comma':
                 self.state = States.NEXT_GEN_CREATE_OFFSPRING
             else:
-                raise Exception('Invalid selection_type: "{}"'.format(
-                    get_ga_constant('selection_type')))
+                raise Exception('Invalid selection_type: "{}"'.format(get_ga_constant('selection_type')))
 
             self._offset_into_population = 0
             self._total_individuals_ran = 0  # Reset back to the first individual
 
             self.population.individuals = self._next_pop
+            # print("Individuals before elites:", [car.id for car in self.population.individuals], len(self.population.individuals))
+
             self._next_pop = []  # Reset the next pop
 
             # Calculate fit
@@ -643,13 +644,14 @@ class MainWindow(QMainWindow):
             else:
                 self.gen_without_improvement += 1
             # Set text for gen improvement
-            self.stats_window.gens_without_improvement.setText(
-                str(self.gen_without_improvement))
+            self.stats_window.gens_without_improvement.setText(str(self.gen_without_improvement))
 
             # Set the population to be just the parents allowed for reproduction. Only really matters if `plus` method is used.
             # If `plus` method is used, there can be more individuals in the next generation, so this limits the number of parents.
-            self.population.individuals = elitism_selection(
-                self.population, get_ga_constant('elitism'))
+            self.population.individuals = elitism_selection(self.population, self.get_num_elites())
+            self.elites_state = True
+
+            # print("ELITES:", [car.id for car in self.population.individuals], len(self.population.individuals))
 
             random.shuffle(self.population.individuals)
 
@@ -659,35 +661,55 @@ class MainWindow(QMainWindow):
                 for individual in self.population.individuals:
                     individual.lifespan -= 1
 
-        num_offspring = min(self._next_gen_size - len(self._next_pop), get_boxcar_constant('run_at_a_time'))
+        # print("NO ELITES:", [car.id for car in self.population.individuals], len(self.population.individuals))
+
+        # num_offspring = min(self._next_gen_size - len(self._next_pop), get_boxcar_constant('run_at_a_time'))
+        num_offspring = self._next_gen_size - get_boxcar_constant('run_at_a_time') - len(self.population.individuals)
+
+        # print("num_offspring:", num_offspring, "(", self._next_gen_size, len(self._next_pop), get_boxcar_constant('run_at_a_time'), ")")
+        # print("--- SHOULD BE num_offspring:", self._next_gen_size - get_boxcar_constant('run_at_a_time') - len(self.population.individuals), "---")
+
         self.cars = self._create_num_offspring(num_offspring)
+
+        # print("NEW CARS after elites:", [car.id for car in self.cars], len(self.cars))
         # Set number of cars alive
         self.num_cars_alive = len(self.cars)
         self.batch_size = self.num_cars_alive
-        self.current_batch += 1
+        # self.current_batch += 1
         self._set_number_of_cars_alive()
+
         self._next_pop.extend(self.cars)  # Add to next_pop
-        self.game_window.cars = self.cars
-        leader = self.find_new_leader()
-        self.leader = leader
-        self.game_window.leader = leader
+        # self.game_window.cars = self.cars
+        # leader = self.find_new_leader()
+        # self.leader = leader
+        # self.game_window.leader = leader
         if get_ga_constant('selection_type').lower() == 'comma':
             self.state = States.NEXT_GEN_CREATE_OFFSPRING
         elif get_ga_constant('selection_type').lower() == 'plus' and self._offset_into_population >= len(self.population.individuals):
             self.state = States.NEXT_GEN_CREATE_OFFSPRING
 
+        # print("NEXT POP:", [car.id for car in self._next_pop], len(self._next_pop))
+
         # Set the next pop
         # random.shuffle(next_pop)
         # self.population.individuals = next_pop
+
+    def get_num_elites(self):
+        num_elites = int(get_ga_constant("num_parents") * get_ga_constant("elitism"))
+
+        return num_elites if num_elites % 2 == 0 else num_elites - 1
 
     def get_id(self):
         """
         Sets the id of the car based on the current generation and the number of cars generated
         """
         # id_text = f'Gen_{self.current_generation+1}_id_{self.num_car_generated}'
-        id_text = f'{self.current_generation+1}_{self.num_car_generated}' # second way to set id, which is maybe cleaner
+        id_text = f'{self.current_generation+1}_{self.num_car_generated}'  # second way to set id, which is maybe cleaner
         self.num_car_generated += 1
         return id_text
+
+    def set_car_id(self, car: Car):
+        car.id = f"{self.current_generation+1}_{str(car).split('x')[-1][:-1]}"
 
     def init_window(self):
         self.centralWidget = QWidget(self)
@@ -815,6 +837,7 @@ class MainWindow(QMainWindow):
                 winning_tile = individual.winning_tile
                 lowest_y_pos = individual.lowest_y_pos
                 lifespan = individual.lifespan
+                id = individual.id
 
                 # If the individual is still alive, they survive
                 if lifespan > 0:
@@ -823,8 +846,11 @@ class MainWindow(QMainWindow):
                               wheel_radii, wheel_densities, wheels_vertices_pol,
                               chassis_vertices, chassis_densities,                    # Chassis
                               winning_tile, lowest_y_pos,
-                              lifespan, self.get_id())
+                              lifespan, id)#self.get_id())
+
+                    # self.set_car_id(id)
                     next_pop.append(car)
+
                     # Check to see if we've added enough parents. The reason we check here is if you requet 5 parents but
                     # 2/5 are dead, then you need to keep going until you get 3 good ones.
                     if len(next_pop) == number_of_offspring:
@@ -843,6 +869,7 @@ class MainWindow(QMainWindow):
         # rather at the end of new_generation
         else:
             # Keep adding children until we reach the size we need
+            # print("NUMBER OF OFFSPRING:", number_of_offspring, len(next_pop), len(next_pop) < number_of_offspring)
             while len(next_pop) < number_of_offspring:
                 # Tournament crossover
                 if get_ga_constant('crossover_selection').lower() == 'tournament':
@@ -870,8 +897,11 @@ class MainWindow(QMainWindow):
                 # Create children from the new chromosomes
                 c1 = Car.create_car_from_chromosome(
                     p1.world, p1.winning_tile, p1.lowest_y_pos, get_ga_constant('lifespan'), c1_chromosome, self.get_id())
+                self.set_car_id(c1)
+
                 c2 = Car.create_car_from_chromosome(
                     p2.world, p2.winning_tile, p2.lowest_y_pos, get_ga_constant('lifespan'), c2_chromosome, self.get_id())
+                self.set_car_id(c2)
 
                 # Add children to the next generation
                 next_pop.extend([c1, c2])
@@ -887,6 +917,8 @@ class MainWindow(QMainWindow):
         self.current_generation += 1
         self.stats_window.generation.setText(
             "<font color='red'>" + str(self.current_generation + 1) + '</font>')
+
+        # print("NEW GEN")
 
     def _set_first_gen(self) -> None:
         """
@@ -906,15 +938,14 @@ class MainWindow(QMainWindow):
         if get_ga_constant('num_parents') - self._total_individuals_ran >= get_boxcar_constant('run_at_a_time'):
             num_to_create = get_boxcar_constant('run_at_a_time')
         else:
-            num_to_create = get_ga_constant(
-                'num_parents') - self._total_individuals_ran
+            num_to_create = get_ga_constant('num_parents') - self._total_individuals_ran
 
         # @NOTE that I create the subset of cars
         for i in range(num_to_create):
             car = create_random_car(
                 self.world, self.floor.winning_tile, self.floor.lowest_y, self.get_id())
+            self.set_car_id(car)
             self.cars.append(car)
-            
 
         # Add the cars to the next_pop which is used by population
         self._next_pop.extend(self.cars)
@@ -961,31 +992,35 @@ class MainWindow(QMainWindow):
         if self.state == States.STOP:
             sys.exit("Max generations reached.")
 
-        for car in self.cars:
-            if not car.is_alive:
-                continue
-            # Did the car die/win?
-            if not car.update():
-                # Another individual has finished
-                self._total_individuals_ran += 1
-                # Decrement the number of cars alive
-                self.num_cars_alive -= 1
-                self._set_number_of_cars_alive()
+        if not self.elites_state:
+            for car in self.cars:
+                if not car.is_alive:
+                    continue
+                # Did the car die/win?
+                if not car.update():
+                    # Another individual has finished
+                    self._total_individuals_ran += 1
+                    # Decrement the number of cars alive
+                    self.num_cars_alive -= 1
+                    self._set_number_of_cars_alive()
 
-                # If the car that just died/won was the leader, we need to find a new one
-                if car == self.leader:
-                    leader = self.find_new_leader()
-                    self.leader = leader
-                    self.game_window.leader = leader
-            else:
-                if not self.leader:
-                    self.leader = leader
-                    self.game_window.leader = leader
+                    # If the car that just died/won was the leader, we need to find a new one
+                    if car == self.leader:
+                        leader = self.find_new_leader()
+                        self.leader = leader
+                        self.game_window.leader = leader
                 else:
-                    car_pos = car.position.x
-                    if car_pos > self.leader.position.x:
-                        self.leader = car
-                        self.game_window.leader = car
+                    if not self.leader:
+                        self.leader = leader
+                        self.game_window.leader = leader
+                    else:
+                        car_pos = car.position.x
+                        if car_pos > self.leader.position.x:
+                            self.leader = car
+                            self.game_window.leader = car
+        else:
+            self._total_individuals_ran += len(self._next_pop)
+            # print("_total_individuals_ran:", self._total_individuals_ran)
 
         if not np.any(np.array([car.is_alive for car in self.cars])):
             if self.state == States.REPLAY and self.current_generation > 0:
@@ -1011,7 +1046,7 @@ class MainWindow(QMainWindow):
         if not self.manual_control and self.leader:
             self.game_window.pan_camera_to_leader(get_boxcar_constant("should_smooth_camera_to_leader"))
         # If there is not a leader then the generation is over OR the next group of N need to run
-        if not self.leader:
+        if not self.leader or self.elites_state:
             # Replay state
             if self.state == States.REPLAY:
                 print("REPLAY")
@@ -1047,29 +1082,55 @@ class MainWindow(QMainWindow):
             # Next N individuals need to run
             # We already have a population defined and we need to create N cars to run
             elif self.state == States.NEXT_GEN_CREATE_OFFSPRING:
-                num_create = min(
-                    self._next_gen_size - self._total_individuals_ran, get_boxcar_constant('run_at_a_time'))
+                # num_create = min(self._next_gen_size - self._total_individuals_ran, get_boxcar_constant('run_at_a_time'))
+
+                # print("BIG IF 1:", self.current_generation, self._total_individuals_ran, self._next_gen_size,
+                #       (self.current_generation > 0 and (self._total_individuals_ran >= self._next_gen_size)))
+
+                if (self.current_generation == 0 and (self._total_individuals_ran >= get_ga_constant('num_parents'))) \
+                        or (self.current_generation > 0 and (self._total_individuals_ran >= self._next_gen_size)):
+                    self.state = States.NEXT_GEN
+                    return
+
+                if len(self._next_pop) == self.get_num_elites():
+                    num_create = get_boxcar_constant('run_at_a_time') - len(self._next_pop)
+                    self.elites_state = False
+                else:
+                    num_create = get_boxcar_constant('run_at_a_time')
+
+                # print("num_create:", num_create, "(nextGenSize:", self._next_gen_size, "len(nexPop):", len(self._next_pop), "totIndivRan:", self._total_individuals_ran, "runAtATime:", get_boxcar_constant('run_at_a_time'), ")")
+                # print("--- SHOULD BE num_create:", self._next_gen_size - get_boxcar_constant('run_at_a_time') - len(self._next_pop), "---")
 
                 self.cars = self._create_num_offspring(num_create)
+                # print("NEW CARS after _create_num_offspring:", [car.id for car in self.cars], len(self.cars))
+
                 self.batch_size = len(self.cars)
                 self.num_cars_alive = len(self.cars)
 
                 # These cars will now be part of the next pop
                 self._next_pop.extend(self.cars)
+
+                # print("NEW NEXT POP after _create_num_offspring:", [car.id for car in self._next_pop], len(self._next_pop))
+
                 self.game_window.cars = self.cars
                 leader = self.find_new_leader()
                 self.leader = leader
                 self.game_window.leader = leader
                 # should we go to the next state?
-                if (self.current_generation == 0 and (self._total_individuals_ran >= get_ga_constant('num_parents'))) or \
-                        (self.current_generation > 0 and (self._total_individuals_ran >= self._next_gen_size)):
+
+                # print("BIG IF 2:", self.current_generation, self._total_individuals_ran, self._next_gen_size, (self.current_generation > 0 and (self._total_individuals_ran >= self._next_gen_size)))
+
+                if (self.current_generation == 0 and (self._total_individuals_ran >= get_ga_constant('num_parents'))) \
+                        or (self.current_generation > 0 and (self._total_individuals_ran >= self._next_gen_size)):
                     self.state = States.NEXT_GEN
                 else:
-                    self.current_batch += 1
+                    if not self.elites_state:
+                        self.current_batch += 1
                     self._set_number_of_cars_alive()
                 return
             elif self.state in (States.NEXT_GEN, States.NEXT_GEN_COPY_PARENTS_OVER, States.NEXT_GEN_CREATE_OFFSPRING):
                 self.next_generation()
+                # print("/"*18)
                 return
             else:
                 raise Exception('You should not be able to get here, but if you did, awesome! Report this to me if you actually get here.')
