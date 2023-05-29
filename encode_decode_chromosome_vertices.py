@@ -68,7 +68,7 @@ def rs_thetas_to_string(rs_thetas: tuple) -> tuple:
                 ("|" if i != 0 else "") + str(round(r, round_length_vertices_coordinates))
             ) for i, (r, _) in enumerate(rs_thetas)
         ]
-    )
+    ) if rs_thetas[0] is not None else None
 
     thetas = "".join(
         [
@@ -76,21 +76,24 @@ def rs_thetas_to_string(rs_thetas: tuple) -> tuple:
                 ("|" if i != 0 else "") + str(theta)
             ) for i, (_, theta) in enumerate(rs_thetas)
         ]
-    )
+    ) if rs_thetas[1] is not None else None
 
     return rs, thetas
 
 
 def string_to_rs_thetas(str_rs: str, str_thetas: str) -> tuple:
-    rs = [
-        float(str_r)
-        for str_r in str_rs.split("|")
-    ]
+    if str_rs is not None and str_thetas is not None:
+        rs = [
+            float(str_r)
+            for str_r in str_rs.split("|")
+        ]
 
-    thetas = [
-        int(str_theta)
-        for str_theta in str_thetas.split("|")
-    ]
+        thetas = [
+            int(str_theta)
+            for str_theta in str_thetas.split("|")
+        ]
+    else:
+        rs, thetas = None, None
 
     return rs, thetas
 
