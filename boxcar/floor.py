@@ -19,7 +19,6 @@ def rotate_floor_tile(coords: List[b2Vec2], center: b2Vec2, angle: float) -> Lis
 
     return new_coords
 
-# MN FIXME do we want to make normal floor for the start and finish line?
 def create_normal_floor_tile(world: b2World, position: b2Vec2, angle: float) -> b2Body:
     """
     Create a floor tile at some angle
@@ -126,6 +125,10 @@ class Floor(object):
             self._create_jagged_floor()
         elif self.floor_creation_type == 'holes':
             self._create_holes_floor()
+        elif self.floor_creation_type == 'walls': 
+            self._create_wall_floor() 
+        elif self.floor_creation_type == 'flat': 
+            self._create_flat_floor() 
 
         self.lowest_y = 10
         for floor_tile in self.floor_tiles:
@@ -169,8 +172,7 @@ class Floor(object):
             tile_position = world_coord
 
         self._create_stopping_zone(tile_position)
-
-            
+        
     def _generate_ramp(self):
         """
         Helper method for generating a ramp
@@ -266,7 +268,6 @@ class Floor(object):
 
     # MN MODIFIED generate holes floors
     def _create_holes_floor(self):
-        
         tile_position = b2Vec2(-5, 0)
         # create first tiles 
         for i in range(10):
@@ -275,20 +276,73 @@ class Floor(object):
             world_coord = floor_tile.GetWorldPoint(floor_tile.fixtures[0].shape.vertices[1])
             tile_position = world_coord
 
-        last_approach_tile = tile_position
-
         num_holes = get_boxcar_constant('number_of_holes')
         distance_to_fly = get_boxcar_constant('hole_distance_needed_to_jump')
-        for i in range(num_holes):
-            tile_position = b2Vec2(tile_position.x + distance_to_fly, last_approach_tile.y)
-            for i in range(10):
+        incremental_distance = get_boxcar_constant('incremental_distance')
+
+        tile_separations = round(self.num_tiles / num_holes)
+
+        for hole in range(num_holes):
+            tile_position = b2Vec2(tile_position.x + distance_to_fly, tile_position.y)
+            for tile in range(tile_separations):
                 floor_tile = create_floor_tile(self.world, tile_position, 0)
                 self.floor_tiles.append(floor_tile)
                 world_coord = floor_tile.GetWorldPoint(floor_tile.fixtures[0].shape.vertices[1])
                 tile_position = world_coord
-            distance_to_fly = distance_to_fly + 1
+            distance_to_fly = distance_to_fly + incremental_distance
 
         self._create_stopping_zone(tile_position)
+
+    def _create_wall_floor(self):  
+        tile_position = b2Vec2(-5, 0) 
+        # create first tiles 
+        for i in range(10): 
+            floor_tile = create_floor_tile(self.world, tile_position, 0) 
+            self.floor_tiles.append(floor_tile) 
+            world_coord = floor_tile.GetWorldPoint(floor_tile.fixtures[0].shape.vertices[1]) 
+            tile_position = world_coord 
+         
+        num_walls = get_boxcar_constant('number_of_walls') 
+        num_wall_tiles = get_boxcar_constant('number_of_wall_tiles')  
+        wall_tile_incremental = get_boxcar_constant('wall_tile_incremental')
+
+        tile_separations = round(self.num_tiles / num_walls)
+
+        for wall in range(num_walls):     
+            for wall_tile in range(num_wall_tiles):  
+                floor_tile = create_floor_tile(self.world, tile_position, 90)  
+                self.floor_tiles.append(floor_tile)  
+                world_coord = floor_tile.GetWorldPoint(floor_tile.fixtures[0].shape.vertices[1])  
+                # Adjust the tile to the left a bit so they overlap and form a wall  
+                tile_position = b2Vec2(world_coord.x - get_boxcar_constant('floor_tile_height'), world_coord.y)  
+            num_wall_tiles = num_wall_tiles + wall_tile_incremental
+            
+            for floor_tile in range(tile_separations): 
+                floor_tile = create_floor_tile(self.world, tile_position, 0) 
+                self.floor_tiles.append(floor_tile) 
+                world_coord = floor_tile.GetWorldPoint(floor_tile.fixtures[0].shape.vertices[1]) 
+                tile_position = world_coord 
+              
+        self._create_stopping_zone(tile_position)  
+  
+    def _create_flat_floor(self): 
+         
+        tile_position = b2Vec2(-5, 0) 
+        # create first tiles  
+        for i in range(10): 
+            floor_tile = create_floor_tile(self.world, tile_position, 0) 
+            self.floor_tiles.append(floor_tile) 
+            world_coord = floor_tile.GetWorldPoint(floor_tile.fixtures[0].shape.vertices[1]) 
+            tile_position = world_coord 
+ 
+        for i in range(self.num_tiles): 
+            floor_tile = create_floor_tile(self.world, tile_position, 0) 
+            self.floor_tiles.append(floor_tile) 
+            world_coord = floor_tile.GetWorldPoint(floor_tile.fixtures[0].shape.vertices[1]) 
+            tile_position = world_coord 
+         
+        self._create_stopping_zone(tile_position) 
+ 
 
     def _create_stopping_zone(self, tile_position: b2Vec2) -> None:
         """
@@ -310,16 +364,3 @@ class Floor(object):
 
             if i == tiles_needed_before_wall:
                 self.winning_tile = self.floor_tiles[-1]
-
-        # @NOTE: If you really want you can add the below back in. I'm not adding it to settings, but it is funny
-        # to watch the cars develop strategies to try to climb the wall.
-
-        # Create wall
-        # num_wall_tiles = math.ceil(max_car_size * 2.0 / tile_width)
-        # for i in range(num_wall_tiles):
-        #     floor_tile = create_floor_tile(self.world, tile_position, 90)
-        #     self.floor_tiles.append(floor_tile)
-        #     world_coord = floor_tile.GetWorldPoint(floor_tile.fixtures[0].shape.vertices[1])
-        #     # Adjust the tile to the left a bit so they overlap and form a wall
-        #     tile_position = b2Vec2(world_coord.x - get_boxcar_constant('floor_tile_height'), world_coord.y)
-    

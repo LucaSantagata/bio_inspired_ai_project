@@ -220,6 +220,8 @@ class InitWindow(QWidget):
         self.floor_combo.addItem("Ramp")
         self.floor_combo.addItem("Jagger")
         self.floor_combo.addItem("Holes")
+        self.floor_combo.addItem("Walls")
+        self.floor_combo.addItem("Flat")
         self.floor_combo.move(50, 50)
 
         # Create combo box for gravities
@@ -331,6 +333,10 @@ class InitWindow(QWidget):
             update_settings_value("boxcar", "floor_creation_type", ("jagger", str))
         elif self.floor_type == 'Holes':
             update_settings_value("boxcar", "floor_creation_type", ("holes", str))
+        elif self.floor_type == 'Walls':
+            update_settings_value("boxcar", "floor_creation_type", ("walls", str))
+        elif self.floor_type == 'Flat':
+            update_settings_value("boxcar", "floor_creation_type", ("flat", str))
 
         if self.gravity == 'Earth':
             update_settings_value("boxcar", "gravity", ((0, -9.81), tuple))
