@@ -447,16 +447,16 @@ def create_random_car(world: b2World, winning_tile: b2Vec2, lowest_y_pos: float,
         density = random.uniform(get_boxcar_constant('min_wheel_density'), get_boxcar_constant('max_wheel_density'))
 
         if random.random() >= get_boxcar_constant('circle_wheel_probability'):
-            num_vertices = random.randint(get_boxcar_constant('min_num_wheels_vertices'), get_boxcar_constant('max_num_wheels_vertices'))
+            num_vertices = random.randint(get_boxcar_constant('min_num_wheels_vertices'), get_boxcar_constant('max_num_wheels_vertices') + 1)
 
-            wheel_vertices_angles = np.arange(0, 360, 360 // num_vertices)
+            wheel_vertices_angles = np.arange(0, 360, 360 / num_vertices, dtype=int)
 
             round_length_vertices_coordinates = get_boxcar_constant("round_length_vertices_coordinates")
             wheel_vertices_radiuses = np.array(
                 [
                     round(
                         (
-                                (random.random() * (max_wheel_vertices_radius - min_wheel_vertices_radius)) + min_wheel_vertices_radius
+                            (random.random() * (max_wheel_vertices_radius - min_wheel_vertices_radius)) + min_wheel_vertices_radius
                         ),
                         round_length_vertices_coordinates
                     )
