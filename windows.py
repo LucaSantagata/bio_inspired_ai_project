@@ -180,6 +180,13 @@ class DensityWindow(QWidget):
                 get_boxcar_constant('jagged_decreasing_angle')
             )
             self._add_bc_row_entry(None, 'Jagged Angle:', font_bold, normal_font, force_value=angle_range)
+        # MN MODIFIED wall specific stuff
+        elif get_boxcar_constant('floor_creation_type') == 'walls':
+            self._add_bc_row_entry('number_of_walls', 'Number of walls:', font_bold, normal_font) # TOFIX
+            self._add_bc_row_entry('number_of_wall_tiles', 'Number of tiles per wall:', font_bold, normal_font)
+        # MN MODIFIED straight specific stuff
+        elif get_boxcar_constant('floor_creation_type') == 'flat':
+            self._add_bc_row_entry('max_floor_tiles', 'Num Floor Tiles:', font_bold, normal_font)
         else:
             raise Exception('Unable to determine floor_creation_type "{}"'.format(get_boxcar_constant('floor_creation_type')))
         self._add_bc_row_entry('car_max_tries', 'Car Max Tries:', font_bold, normal_font)
