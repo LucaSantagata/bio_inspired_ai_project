@@ -165,16 +165,16 @@ settings['ga'] = {
     "min_fitness_value": (1e-10, float),
 
     # Selection
-    'num_parents': (30, int),
-    'num_offspring': (30, int),
+    'num_parents': (50, int),
+    'num_offspring': (50, int),
 
-    'elitism': (5, int),
+    'elitism': (0.2, float),
 
     'selection_type': ('plus', str),
     'lifespan': (5, float),
 
     # Mutation
-    'mutation_rate': (0.8, float),
+    'mutation_rate': (0.5, float),
     'gaussian_mutation_scale': (0.2, float),
     'mutation_rate_type': ('static', str),
 

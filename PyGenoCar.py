@@ -532,6 +532,7 @@ class MainWindow(QMainWindow):
         self.max_fitness = 0.0
         self.cars = []
         self.population = Population([])
+        self.all_parents = Population([]) # population of all parents so we don't lose them
         self.state = States.FIRST_GEN
         self.elites_state = False
         # Used when you are in state 1, i.e. creating new cars from the old population
@@ -648,11 +649,12 @@ class MainWindow(QMainWindow):
 
             # Set the population to be just the parents allowed for reproduction. Only really matters if `plus` method is used.
             # If `plus` method is used, there can be more individuals in the next generation, so this limits the number of parents.
+            self.all_parents.individuals = elitism_selection(self.population, get_ga_constant('num_parents'))
             self.population.individuals = elitism_selection(self.population, self.get_num_elites())
             self.elites_state = True
 
             # print("ELITES:", [car.id for car in self.population.individuals], len(self.population.individuals))
-
+            random.shuffle(self.all_parents.individuals)
             random.shuffle(self.population.individuals)
 
             # Parents + offspring selection type ('plus')
@@ -695,9 +697,8 @@ class MainWindow(QMainWindow):
         # self.population.individuals = next_pop
 
     def get_num_elites(self):
-        num_elites = int(get_ga_constant("num_parents") * get_ga_constant("elitism"))
-
-        return num_elites if num_elites % 2 == 0 else num_elites - 1
+        num_elites = round((get_ga_constant("num_parents") + get_ga_constant("num_offspring"))* get_ga_constant("elitism"))
+        return num_elites
 
     def get_id(self):
         """
@@ -869,42 +870,43 @@ class MainWindow(QMainWindow):
         # rather at the end of new_generation
         else:
             # Keep adding children until we reach the size we need
-            # print("NUMBER OF OFFSPRING:", number_of_offspring, len(next_pop), len(next_pop) < number_of_offspring)
-            while len(next_pop) < number_of_offspring:
-                # Tournament crossover
-                if get_ga_constant('crossover_selection').lower() == 'tournament':
-                    p1, p2 = tournament_selection(
-                        self.population, 2, get_ga_constant('tournament_size'))
-                # Roulette
-                elif get_ga_constant('crossover_selection').lower() == 'roulette':
-                    p1, p2 = roulette_wheel_selection(self.population, 2)
-                else:
-                    raise Exception('crossover_selection "{}" is not supported'.format(
-                        get_ga_constant('crossover_selection').lower()))
+            if (not self.elites_state):
 
-                # Crossover
-                c1_chromosome, c2_chromosome = self._crossover(
-                    p1.chromosome, p2.chromosome)
+                while len(next_pop) < number_of_offspring:
+                    # Tournament crossover
+                    if get_ga_constant('crossover_selection').lower() == 'tournament':
+                        p1, p2 = tournament_selection(
+                            self.all_parents, 2, get_ga_constant('tournament_size'))
+                    # Roulette
+                    elif get_ga_constant('crossover_selection').lower() == 'roulette':
+                        p1, p2 = roulette_wheel_selection(self.all_parents, 2)
+                    else:
+                        raise Exception('crossover_selection "{}" is not supported'.format(
+                            get_ga_constant('crossover_selection').lower()))
 
-                # Mutation
-                self._mutation(c1_chromosome)
-                self._mutation(c2_chromosome)
+                    # Crossover
+                    c1_chromosome, c2_chromosome = self._crossover(
+                        p1.chromosome, p2.chromosome)
 
-                # Don't let the chassis density become <=0. It is bad
-                smart_clip(c1_chromosome)
-                smart_clip(c2_chromosome)
+                    # Mutation
+                    self._mutation(c1_chromosome)
+                    self._mutation(c2_chromosome)
 
-                # Create children from the new chromosomes
-                c1 = Car.create_car_from_chromosome(
-                    p1.world, p1.winning_tile, p1.lowest_y_pos, get_ga_constant('lifespan'), c1_chromosome, self.get_id())
-                self.set_car_id(c1)
+                    # Don't let the chassis density become <=0. It is bad
+                    smart_clip(c1_chromosome)
+                    smart_clip(c2_chromosome)
 
-                c2 = Car.create_car_from_chromosome(
-                    p2.world, p2.winning_tile, p2.lowest_y_pos, get_ga_constant('lifespan'), c2_chromosome, self.get_id())
-                self.set_car_id(c2)
+                    # Create children from the new chromosomes
+                    c1 = Car.create_car_from_chromosome(
+                        p1.world, p1.winning_tile, p1.lowest_y_pos, get_ga_constant('lifespan'), c1_chromosome, self.get_id())
+                    self.set_car_id(c1)
 
-                # Add children to the next generation
-                next_pop.extend([c1, c2])
+                    c2 = Car.create_car_from_chromosome(
+                        p2.world, p2.winning_tile, p2.lowest_y_pos, get_ga_constant('lifespan'), c2_chromosome, self.get_id())
+                    self.set_car_id(c2)
+
+                    # Add children to the next generation
+                    next_pop.extend([c1, c2])
 
         # Return the next population that will play. Remember, this can be a subset of the overall population since
         # those parents still exist.
