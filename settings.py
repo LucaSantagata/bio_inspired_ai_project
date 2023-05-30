@@ -15,7 +15,7 @@ def fitness_function(max_position, num_wheels, total_chassis_volume, total_wheel
     )
 
 
-def fitness_function2 (
+def fitness_function2(
     max_position, is_winner, num_wheels, min_num_wheels, max_contacts_penalty,
     contacts_threshold, wheels_contacts, frames, chassis_volume, chassis_mass,
     wheels_volume, wheels_mass, cumulative_stall_time
@@ -51,14 +51,14 @@ settings['boxcar'] = {
     ### Floor ###
     'floor_tile_height': (.15, float),  # .15
     'floor_tile_width': (1, float),  # 1.5
-    'max_floor_tiles': (50, int),
+    'max_floor_tiles': (150, int),
     'gaussian_floor_seed': (random.randint(1, 1000), int),
 
     # MN MODIFIED if the tiles are strange or not
     'min_num_section_per_tile': (1, int),  # MN MODIFIED min number of sections per tile
     'max_num_section_per_tile': (1, int),  # MN MODIFIED max number of sections per tile
     
-    # Type of floor : 'gaussian', 'ramp', 'jagged', 'holes', 'walls' , 'flat'
+    # Type of floor : 'gaussian', 'ramp', 'jagged', 'holes'
     'floor_creation_type': ('gaussian', str),
     ### Floor - Gaussian random. Used when 'floor_creation_type' == 'gaussian' ###
     # Only needed if using gaussian random floor creation
@@ -84,13 +84,7 @@ settings['boxcar'] = {
 
     ### Floor - holes. 
     'number_of_holes': (5, int),  # MN MODIFIED number of holes
-    'hole_distance_needed_to_jump': (1, float),  # MN MODIFIED the first jump distance
-    'incremental_distance': (1, float),  # MN MODIFIED the distance incrementation for each jump 0 = no incrementation
-
-    ### Floor - wall. 
-    'number_of_walls': (5, int), # MN MODIFIED number of walls
-    'number_of_wall_tiles': (1, int), # MN MODIFIED number of tiles per wall
-    'wall_tile_incremental': (1, int),  # MN MODIFIED the tile incrementation for each wall 0 = no incrementation
+    'hole_distance_needed_to_jump': (10, float),  # MN MODIFIED the first jump distance
 
     ### Jagged - ramp. Used when 'floor_creation_type' == 'jagged' ###
     # Only needed if using jaged floor creation
@@ -117,10 +111,10 @@ settings['boxcar'] = {
     "min_wheel_vertices_radius": (0.1, float),
     "max_wheel_vertices_radius": (1.3, float),
 
-    "circle_wheel_probability": (0.2, float),
+    "circle_wheel_probability": (0.0, float),
 
     "min_num_wheels_vertices": (3, int),
-    "max_num_wheels_vertices": (10, int),
+    "max_num_wheels_vertices": (8, int),
 
     "round_length_vertices_coordinates": (6, int),
 
@@ -166,7 +160,7 @@ settings['boxcar'] = {
 
 # Genetic algorithm specific settings
 settings['ga'] = {
-    "max_generations": (10, int),
+    "max_generations": (100, int),
 
     "min_fitness_value": (1e-10, float),
 
@@ -174,21 +168,21 @@ settings['ga'] = {
     'num_parents': (50, int),
     'num_offspring': (50, int),
 
-    'elitism': (0.2, float),
+    'elitism': (0.3, float),
 
     'selection_type': ('plus', str),
     'lifespan': (5, float),
 
     # Mutation
-    'mutation_rate': (0.5, float),
+    'mutation_rate': (0.8, float),
     'gaussian_mutation_scale': (0.2, float),
     'mutation_rate_type': ('static', str),
 
     # Crossover
-    'crossover_probability': (0.5, float), # Single point binary crossover probability
+    'crossover_probability': (0.9, float), # Single point binary crossover probability
     'SBX_eta': (1, float),
     'crossover_selection': ('tournament', str), 
-    'tournament_size': (10, int),
+    'tournament_size': (5, int),
 
     "max_contacts_penalty": (50, int),
     "contacts_threshold": (10, int),

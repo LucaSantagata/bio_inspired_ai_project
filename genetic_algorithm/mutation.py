@@ -181,7 +181,7 @@ def gaussian_mutation(chromosome: np.ndarray, prob_mutation: float,
 
     mutation_array = np.random.random(chromosome.shape) < prob_mutation
     mutation_array[-1, :] = mutation_array[-2, :]
-    print("mutation_array:", mutation_array, mutation_array.shape)
+    # print("mutation_array:", mutation_array, mutation_array.shape)
 
     # chromosome_to_mutate = chromosome[mutation_array].reshape(7, 8)
     #

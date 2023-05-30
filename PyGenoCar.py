@@ -538,7 +538,7 @@ class MainWindow(QMainWindow):
         self.max_fitness = 0.0
         self.cars = []
         self.population = Population([])
-        self.all_parents = Population([]) # population of all parents so we don't lose them
+        self.all_parents = Population([])  # population of all parents so we don't lose them
         self.state = States.FIRST_GEN
         self.elites_state = False
         # Used when you are in state 1, i.e. creating new cars from the old population
@@ -703,7 +703,8 @@ class MainWindow(QMainWindow):
         # self.population.individuals = next_pop
 
     def get_num_elites(self):
-        num_elites = round((get_ga_constant("num_parents") + get_ga_constant("num_offspring"))* get_ga_constant("elitism"))
+        num_elites = int((get_ga_constant("num_parents") + get_ga_constant("num_offspring")) * get_ga_constant("elitism"))
+        num_elites = num_elites if num_elites % 2 == 0 else num_elites - 1
         return num_elites
 
     def get_id(self):
@@ -876,8 +877,7 @@ class MainWindow(QMainWindow):
         # rather at the end of new_generation
         else:
             # Keep adding children until we reach the size we need
-            if (not self.elites_state):
-
+            if not self.elites_state:
                 while len(next_pop) < number_of_offspring:
                     # Tournament crossover
                     if get_ga_constant('crossover_selection').lower() == 'tournament':
@@ -926,7 +926,7 @@ class MainWindow(QMainWindow):
         self.stats_window.generation.setText(
             "<font color='red'>" + str(self.current_generation + 1) + '</font>')
 
-        # print("NEW GEN")
+        print("Generation:", self.current_generation + 1)
 
     def _set_first_gen(self) -> None:
         """
@@ -1100,6 +1100,7 @@ class MainWindow(QMainWindow):
                     self.state = States.NEXT_GEN
                     return
 
+                # print("IF:", len(self._next_pop), self.get_num_elites(), len(self._next_pop) == self.get_num_elites())
                 if len(self._next_pop) == self.get_num_elites():
                     num_create = get_boxcar_constant('run_at_a_time') - len(self._next_pop)
                     self.elites_state = False
@@ -1244,7 +1245,7 @@ def save_population(population_folder: str, file_name: str, population: Populati
 
     for i, car in enumerate(population.individuals):
         car_name = f'car_{car.id}'
-        print('saving {} to {}'.format(car_name, population_folder))
+        # print('saving {} to {}'.format(car_name, population_folder))
         save_car(
             population_folder=population_folder,
             file_name=file_name,
