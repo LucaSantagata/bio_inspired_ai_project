@@ -382,9 +382,25 @@ class InitWindow(QWidget):
         else:
             if self.replay_check.isChecked():
                 args.replay_from_filename = self.replay_line.text()
+
+                name = args.replay_from_filename.split('/')
+                replay_settings_fname = os.path.join("/".join(name[0:-1]),
+                                                     "settings_" + name[-1].split('.')[0] + "run.pkl")
+
+                with open(replay_settings_fname, "rb") as f:
+                    settings.settings = pickle.load(f)
+
                 self.replay = True
             elif self.test_check.isChecked():
                 args.test_from_filename = self.test_line.text()
+
+                name = args.test_from_filename.split('/')
+                replay_settings_fname = os.path.join("/".join(name[0:-1]),
+                                                     "settings_" + name[-1].split('.')[0] + "run.pkl")
+
+                with open(replay_settings_fname, "rb") as f:
+                    settings.settings = pickle.load(f)
+
                 self.replay = True
 
             if self.save_pop_check.isChecked() and self.save_pop_check.isEnabled():
@@ -1312,7 +1328,7 @@ if __name__ == "__main__":
     if args.replay_from_filename or args.test_from_filename:
         filename = args.replay_from_filename if args.replay_from_filename else args.test_from_filename
         name = filename.split('/')
-        replay_settings_fname = os.path.join("/".join(name[0:-1]), "settings_" + name[-1].split('.')[0] + ".pkl")
+        replay_settings_fname = os.path.join("/".join(name[0:-1]), "settings_" + name[-1].split('.')[0] + "run.pkl")
 
         with open(replay_settings_fname, "rb") as f:
             settings.settings = pickle.load(f)
