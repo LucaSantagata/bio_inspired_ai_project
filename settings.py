@@ -21,8 +21,8 @@ def fitness_function2(
     wheels_volume, wheels_mass, cumulative_stall_time
 ) -> float:
     return fitness_scale_function(
-        10 * max_position +  # 10e4
-        1000 * is_winner -  # 10e3
+        10 * max_position -  # 10e4
+        # 1000 * is_winner -  # 10e3
         # 50 * num_wheels -  # 10e2
         50 * num_wheels if num_wheels > min_num_wheels else 0 -  # 10e2
         np.sum(
@@ -58,7 +58,7 @@ settings['boxcar'] = {
     'min_num_section_per_tile': (1, int),  # MN MODIFIED min number of sections per tile
     'max_num_section_per_tile': (1, int),  # MN MODIFIED max number of sections per tile
     
-    # Type of floor : 'gaussian', 'ramp', 'jagged', 'holes'
+    # Type of floor : 'gaussian', 'ramp', 'jagged', 'holes', 'walls' , 'flat'
     'floor_creation_type': ('gaussian', str),
     ### Floor - Gaussian random. Used when 'floor_creation_type' == 'gaussian' ###
     # Only needed if using gaussian random floor creation
@@ -84,7 +84,13 @@ settings['boxcar'] = {
 
     ### Floor - holes. 
     'number_of_holes': (5, int),  # MN MODIFIED number of holes
-    'hole_distance_needed_to_jump': (10, float),  # MN MODIFIED the first jump distance
+    'hole_distance_needed_to_jump': (1, float),  # MN MODIFIED the first jump distance
+    'incremental_distance': (1, float),  # MN MODIFIED the distance incrementation for each jump 0 = no incrementation
+
+    ### Floor - wall. 
+    'number_of_walls': (5, int), # MN MODIFIED number of walls
+    'number_of_wall_tiles': (1, int), # MN MODIFIED number of tiles per wall
+    'wall_tile_incremental': (1, int),  # MN MODIFIED the tile incrementation for each wall 0 = no incrementation
 
     ### Jagged - ramp. Used when 'floor_creation_type' == 'jagged' ###
     # Only needed if using jaged floor creation
