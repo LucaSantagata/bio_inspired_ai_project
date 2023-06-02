@@ -216,9 +216,9 @@ class InitWindow(QWidget):
         # Create combo box for floors
         floor_label = QLabel('Floor type')
         self.floor_combo = QComboBox(self)
-        self.floor_combo.addItem("Gaussian")
+        self.floor_combo.addItem("Irregular")
         self.floor_combo.addItem("Ramp")
-        self.floor_combo.addItem("Jagger")
+        self.floor_combo.addItem("Jagged")
         self.floor_combo.addItem("Holes")
         self.floor_combo.addItem("Walls")
         self.floor_combo.addItem("Flat")
@@ -235,10 +235,10 @@ class InitWindow(QWidget):
         # Create combo box for tiles
         tiles_label = QLabel('Tiles type')
         self.tiles_combo = QComboBox(self)
-        self.tiles_combo.addItem("Straight Line")
-        self.tiles_combo.addItem("Circle")
-        self.tiles_combo.addItem("Triangle")
-        self.tiles_combo.addItem("Random Polygon")
+        self.tiles_combo.addItem("Linear")
+        self.tiles_combo.addItem("Circular")
+        self.tiles_combo.addItem("Triangular")
+        self.tiles_combo.addItem("Polygonal")
         self.tiles_combo.move(50, 150)
 
         # Create check boxes
@@ -325,12 +325,12 @@ class InitWindow(QWidget):
         self.gravity = self.gravity_combo.currentText()
         self.tiles_type = self.tiles_combo.currentText()
 
-        if self.floor_type == 'Gaussian':
+        if self.floor_type == 'Irregular':
             update_settings_value("boxcar", "floor_creation_type", ("gaussian", str))
         elif self.floor_type == 'Ramp':
             update_settings_value("boxcar", "floor_creation_type", ("ramp", str))
-        elif self.floor_type == 'Jagger':
-            update_settings_value("boxcar", "floor_creation_type", ("jagger", str))
+        elif self.floor_type == 'Jagged':
+            update_settings_value("boxcar", "floor_creation_type", ("jagged", str))
         elif self.floor_type == 'Holes':
             update_settings_value("boxcar", "floor_creation_type", ("holes", str))
         elif self.floor_type == 'Walls':
@@ -345,16 +345,16 @@ class InitWindow(QWidget):
         elif self.gravity == 'Moon':
             update_settings_value("boxcar", "gravity", ((0, -1.622), tuple))
 
-        if self.tiles_type == 'Straight Line':
+        if self.tiles_type == 'Linear':
             update_settings_value("boxcar", "min_num_section_per_tile", (1, int))
             update_settings_value("boxcar", "max_num_section_per_tile", (1, int))
-        elif self.tiles_type == 'Circle':
+        elif self.tiles_type == 'Circular':
             update_settings_value("boxcar", "min_num_section_per_tile", (10, int))
             update_settings_value("boxcar", "max_num_section_per_tile", (10, int))
-        elif self.tiles_type == 'Triangle':
+        elif self.tiles_type == 'Triangular':
             update_settings_value("boxcar", "min_num_section_per_tile", (2, int))
             update_settings_value("boxcar", "max_num_section_per_tile", (2, int))
-        elif self.tiles_type == 'Random Polygon':
+        elif self.tiles_type == 'Polygonal':
             update_settings_value("boxcar", "min_num_section_per_tile", (3, int))
             update_settings_value("boxcar", "max_num_section_per_tile", (8, int))
 
