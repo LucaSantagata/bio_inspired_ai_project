@@ -1,3 +1,10 @@
+*.DS_Store
+savepop*/*
+video*/*
+save_pop*/*
+save_video*/*
+*.png
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
