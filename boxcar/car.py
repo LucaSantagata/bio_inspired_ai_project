@@ -621,16 +621,24 @@ def load_car(world: b2World,
     return car
 
 
-def load_cars(world: b2World,
-             winning_tile: b2Vec2, lowest_y: float,
-             lifespan: Union[int, float],
-             population_csv: str) -> List[Car]:
+def load_cars(
+    world: b2World,
+    winning_tile: b2Vec2, lowest_y: float,
+    lifespan: Union[int, float],
+    population_csv: str,
+    is_test: bool = False
+) -> List[Car]:
     """
     Loads the cars from a csv. This loads the chromosomes.
     """
     # df = pd.read_csv(population_csv).groupby("generation").max()
     df = pd.read_csv(population_csv)
-    df = df.loc[df.groupby('generation')['fitness'].idxmax()]
+    if is_test:
+        print("Loading Test")
+        df = df[df["generation"] == df["generation"].unique()[-1]]
+    else:
+        print("Loading Replay")
+        df = df.loc[df.groupby('generation')['fitness'].idxmax()]
     genes_list = list(genes.keys())
 
     df_cars_chromosomes = df[[col for col in df.columns for gene in genes_list if gene in col]]

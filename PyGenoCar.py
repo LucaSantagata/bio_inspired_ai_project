@@ -197,7 +197,7 @@ def _set_painter(painter: QPainter, color: Qt.GlobalColor, fill: bool, with_anti
 
 
 class InitWindow(QWidget):
-    def __init__(self, stacked_window, output_path, _datetime, replay):
+    def __init__(self, stacked_window, output_path, _datetime):
         super().__init__()
 
         self.initUI()
@@ -210,7 +210,9 @@ class InitWindow(QWidget):
 
         self.output_path = output_path
         self._datetime = _datetime
-        self.replay = replay
+
+        self.replay = False
+        self.test = False
 
     def initUI(self):
         # Create combo box for floors
@@ -402,6 +404,7 @@ class InitWindow(QWidget):
                     settings.settings = pickle.load(f)
 
                 self.replay = True
+                self.test = True
 
             if self.save_pop_check.isChecked() and self.save_pop_check.isEnabled():
                 args.save_pop = self.save_pop_line.text()
@@ -418,7 +421,7 @@ class InitWindow(QWidget):
                 output_file = "video_" + _datetime + ".mp4"
                 self.output_path = os.path.join(args.save_video, output_file)
 
-            self.window = MainWindow(world, self.output_path, self._datetime, self.replay)
+            self.window = MainWindow(world, self.output_path, self._datetime, self.replay, self.test)
             self.stacked_window.addWidget(self.window)
             self.stacked_window.move(0, 0)
             self.stacked_window.setFixedWidth(get_window_constant('width'))
@@ -532,7 +535,7 @@ class GameWindow(QWidget):
 
 
 class MainWindow(QMainWindow):
-    def __init__(self, world, video_path, _datetime, replay: bool = False, run: str = ""):
+    def __init__(self, world, video_path, _datetime, replay: bool = False, test: bool = False, run: str = ""):
         super().__init__()
 
         self.datetime = _datetime
@@ -563,6 +566,7 @@ class MainWindow(QMainWindow):
         self.batch_size = get_boxcar_constant('run_at_a_time')
         self.gen_without_improvement = 0
         self.replay = replay
+        self.test = test
 
         self.out = None
         if self.video_path is not None:
@@ -1079,7 +1083,8 @@ class MainWindow(QMainWindow):
                     self.floor.winning_tile,
                     self.floor.lowest_y,
                     np.inf,
-                    args.replay_from_filename if args.replay_from_filename else args.test_from_filename
+                    args.replay_from_filename if args.replay_from_filename else args.test_from_filename,
+                    self.test
                 )
 
                 self.cars = cars
@@ -1313,6 +1318,7 @@ if __name__ == "__main__":
     global args
     args = parse_args()
     replay = False
+    test = False
 
     _datetime = (datetime.now()).strftime("%Y%m%d_%H%M")
 
@@ -1348,6 +1354,8 @@ if __name__ == "__main__":
                 should_log=True
             )
 
+            test = True
+
     if args.save_video:
         output_file = "video_" + _datetime + ".mp4"
         output_path = os.path.join(args.save_video, output_file)
@@ -1379,14 +1387,14 @@ if __name__ == "__main__":
             )
 
         world = b2World(get_boxcar_constant('gravity'))
-        window = MainWindow(world, output_path, _datetime, replay, run=str(args.run))
+        window = MainWindow(world, output_path, _datetime, replay, test, run=str(args.run))
         window.move(0, 0)
         window.setFixedWidth(get_window_constant('width'))
         window.setFixedHeight(get_window_constant('height'))
 
     else:
         stacked_widget = QStackedWidget()
-        first_window = InitWindow(stacked_widget, output_path, _datetime, replay)
+        first_window = InitWindow(stacked_widget, output_path, _datetime)
         stacked_widget.addWidget(first_window)
         stacked_widget.setCurrentWidget(first_window)
 
