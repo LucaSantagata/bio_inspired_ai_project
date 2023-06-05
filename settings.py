@@ -117,7 +117,7 @@ settings['boxcar'] = {
     "min_wheel_vertices_radius": (0.1, float),
     "max_wheel_vertices_radius": (1.3, float),
 
-    "circle_wheel_probability": (0.0, float),
+    "circle_wheel_probability": (0.5, float),
 
     "min_num_wheels_vertices": (3, int),
     "max_num_wheels_vertices": (8, int),
@@ -129,7 +129,7 @@ settings['boxcar'] = {
 
     # Display
     'show': (True, bool),  # Whether or not to display anything
-    'fps': (60, int),
+    'fps': (45, int),
     'run_at_a_time': (50, int),
     'should_smooth_camera_to_leader': (False, bool),
     'show_label': (True, bool),  # MN MODIFIED show label of the car or not
@@ -166,7 +166,7 @@ settings['boxcar'] = {
 
 # Genetic algorithm specific settings
 settings['ga'] = {
-    "max_generations": (100, int),
+    "max_generations": (10, int),
 
     "min_fitness_value": (1e-10, float),
 
@@ -174,18 +174,18 @@ settings['ga'] = {
     'num_parents': (50, int),
     'num_offspring': (50, int),
 
-    'elitism': (0.3, float),
+    'elitism': (0.05, float),
 
     'selection_type': ('plus', str),
     'lifespan': (5, float),
 
     # Mutation
-    'mutation_rate': (0.8, float),
+    'mutation_rate': (0.5, float),
     'gaussian_mutation_scale': (0.2, float),
     'mutation_rate_type': ('static', str),
 
     # Crossover
-    'crossover_probability': (0.9, float), # Single point binary crossover probability
+    'crossover_probability': (0.5, float), # Single point binary crossover probability
     'SBX_eta': (1, float),
     'crossover_selection': ('tournament', str), 
     'tournament_size': (5, int),
